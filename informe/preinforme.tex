@@ -1,0 +1,124 @@
+%BEGIN COPYPASTE EL INFORME DEL INFO
+\documentclass[10pt, a4paper,english,spanish]{article}
+\usepackage{subfig}
+
+\parindent=20pt
+\parskip=8pt
+\usepackage[width=15.5cm, left=3cm, top=2.5cm, height= 24.5cm]{geometry}
+
+% \usepackage{ccfonts,eulervm} 
+% \usepackage[T1]{fontenc}
+
+\usepackage{longtable}
+\usepackage{ccfonts,eulervm} 
+\usepackage[T1]{fontenc}
+% \usepackage{ccfonts,eulervm} 
+% \usepackage[T1]{fontenc}
+\usepackage{longtable}
+\usepackage{epigraph}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[activeacute, spanish,english]{babel}
+\usepackage{cancel}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm}
+%\usepackage{algpseudocode}
+\usepackage{afterpage}
+\usepackage{caratula}
+\usepackage{url}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{ulem}
+\usepackage{dashrule}
+\usepackage{pdflscape}
+\usepackage{pgf}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata}
+
+
+\floatname{algorithm}{Algoritmo}
+
+\newtheorem{theorem}{Teorema}[section]
+\newtheorem{lemma}[theorem]{Lema}
+\newtheorem{proposition}[theorem]{Proposici\'on}
+\newtheorem{corollary}[theorem]{Corolario}
+
+\newcommand{\Var}{\textbf{var }}
+\newcommand{\True}{\textbf{true }}
+\newcommand{\False}{\textbf{false }}
+\newcommand{\Break}{\textbf{break }}
+\newcommand{\Continue}{\textbf{continue }}
+\newcommand{\Param}{\textbf{param }}
+\newcommand{\ig}[3]{
+	\begin{landscape}
+		\begin{figure}[c]
+			\label{diag_diseno}
+			\includegraphics[scale=#2]{images/#1.pdf}
+			\caption{#3}
+		\end{figure} 
+	\end{landscape}
+	\newpage
+}
+
+
+
+
+% \parindent 0em
+%\algrenewcommand{\algorithmiccomment}[1]{//\textit{#1} }
+
+\renewcommand{\emph}[1]{\textit{#1}}
+\pagestyle{fancy}
+\thispagestyle{fancy}
+\addtolength{\headheight}{1pt}
+\lhead{Seguridad - TP1}
+\rhead{Grupo 8}
+\cfoot{\thepage}
+\renewcommand{\footrulewidth}{0.4pt}
+\newcommand{\hblacksquare}{\hfill \blacksquare}
+%FIN COPYPASTE EL INFORME DEL INFO
+\begin{document}
+
+\materia{Seguridad de la Información}
+\submateria{Segundo Cuatrim\'estre de 2013}
+\titulo{Trabajo Pr\'actico: Malito}
+\subtitulo{La Llama que \textbf{no} llama}
+\grupo{Grupo ``Queremos sanguiches de miga''}
+\integrante{Juli\'an Sackmann}{540/09}{jsackmann@gmail.com}
+\integrante{Juan Pablo Darago}{272/10}{jpdarago@gmail.com}
+\integrante{Vanesa Stricker}{159/09}{vanesastricker@gmail.com}
+% \integrante{Mat\'ias Barbeito}{179/08}{matiasbarbeito@gmail.com}
+
+\maketitle
+\pagebreak
+
+\tableofcontents
+\pagebreak
+
+\section{Introducción} % (fold)
+\label{sec:introducci_n}
+
+La primer parte del TP requiere implementar un \emph{malware} para \texttt{Android} que, al instalarse, envíe las fotos del teléfono a las que tenga acceso a un servidor controlado por nosotros. Para esto, es necesario tomar una serie de decisiones, que se detallan a continuación:
+
+\subsection{Façade} % (fold)
+\label{sub:fa_ade}
+Si bien no tenemos datos certeros de esto, creemos que es extremadamente poco probable que el usario promedio de \texttt{Android} instale voluntariamente una aplicación que se publicite a si mismo como ``TeRoboLasFotosApp''. Es por esto que consideramos necesario \textbf{disfrazar} el app, de tal forma que la probabilidad de una instalación se incremente ligeramente. 
+
+Dado que no queremos q
+
+% subsection fa_ade (end)
+% section introducci_n (end)
+
+
+\addcontentsline{toc}{section}{Referencias}
+\begin{thebibliography}{8}
+\raggedright
+
+\bibitem{AndroidMalware}
+	El librito ese.
+	\newblock {Re loco}.
+	\newblock De colores.
+
+\end{thebibliography}
+
+\end{document}

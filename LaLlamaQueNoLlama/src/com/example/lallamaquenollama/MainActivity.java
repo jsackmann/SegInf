@@ -2,22 +2,9 @@ package com.example.lallamaquenollama;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.InputStreamEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 
 import android.app.Activity;
 import android.os.AsyncTask;
@@ -27,11 +14,22 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.TextView;
+import ch.boye.httpclientandroidlib.HttpResponse;
+import ch.boye.httpclientandroidlib.HttpVersion;
+import ch.boye.httpclientandroidlib.client.HttpClient;
+import ch.boye.httpclientandroidlib.client.methods.HttpGet;
+import ch.boye.httpclientandroidlib.client.methods.HttpPost;
+import ch.boye.httpclientandroidlib.entity.mime.HttpMultipartMode;
+import ch.boye.httpclientandroidlib.entity.mime.MultipartEntity;
+import ch.boye.httpclientandroidlib.entity.mime.content.FileBody;
+import ch.boye.httpclientandroidlib.impl.client.DefaultHttpClient;
+import ch.boye.httpclientandroidlib.params.CoreProtocolPNames;
+import ch.boye.httpclientandroidlib.util.EntityUtils;
 
 public class MainActivity extends Activity {
 	private int uploaded;
 
-	@Override
+		@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
@@ -96,38 +94,30 @@ public class MainActivity extends Activity {
 		}
 
 		public String postImage(File f) {
-			// Create a new HttpClient and Post Header
-			HttpClient httpclient = new DefaultHttpClient();
-			HttpPost httppost = new HttpPost(
-					"http://manzana.no-ip.org/poster.php");
+			HttpPost httppost = new HttpPost("http://manzana.no-ip.org/poster.php");
+			HttpClient client = new DefaultHttpClient();
 
+			client.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
+			 
+			MultipartEntity entity = new MultipartEntity( HttpMultipartMode.BROWSER_COMPATIBLE );
+			
+			FileBody fb = new FileBody(f);
+			entity.addPart( "imageName", fb);
+			 			 
+			httppost.setEntity( entity );
+			 
 			try {
-				// Add your data
-//				List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
-				InputStreamEntity reqEntity = new InputStreamEntity(
-						new FileInputStream(f), -1);
-				reqEntity.setContentType("application/octet-stream");
-				reqEntity.setChunked(true); // Send in multiple parts if needed
-				httppost.setEntity(reqEntity);
-
-//				nameValuePairs.add(new BasicNameValuePair("file", f.getName()));
-//
-//				httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
-				// Execute HTTP Post Request
-				HttpResponse response = httpclient.execute(httppost);
-				String res = convertStreamToString(response.getEntity()
-						.getContent());
-
-				Log.d("LALLAMA", res);
-				return res;
+				return EntityUtils.toString( client.execute( httppost ).getEntity(), "UTF-8" );
 			} catch (Exception e) {
 				Log.d("LALLAMA", "Fallo el post: " + Log.getStackTraceString(e));
 				return null;
+			}finally{
+				client.getConnectionManager().shutdown();
 			}
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private class GetTask extends AsyncTask<String, Integer, String> {
 		@Override
 		protected String doInBackground(String... params) {
