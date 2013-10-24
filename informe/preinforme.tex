@@ -104,9 +104,75 @@ La primer parte del TP requiere implementar un \emph{malware} para \texttt{Andro
 \label{sub:fa_ade}
 Si bien no tenemos datos certeros de esto, creemos que es extremadamente poco probable que el usario promedio de \texttt{Android} instale voluntariamente una aplicación que se publicite a si mismo como ``TeRoboLasFotosApp''. Es por esto que consideramos necesario \textbf{disfrazar} el app, de tal forma que la probabilidad de una instalación se incremente ligeramente. 
 
-Dado que no queremos q
+Aprovechando esta necesidad de disfrazar el app, nos propusimos cumplir uno de nuestros sueños y realizar la facade de este app siguiendo el diseño general de un \textbf{soundboard} de la llama que llama. Este tipo de aplicaciones tienen como objetivo el de presentar al usuario con una serie de botones, cada uno de los cuales emite un sonido al ser presionado. En general, estas aplicaciones ofrecen la funcionalidad de setear estos sonidos como ringtones de mensajes o llamadas.
 
+En nuestro caso decidimos instanciar el modelo de soundboard en el viejo y querido La llama Que Llama. 
+
+%Alguien complete este chamuyo porque me aburri.
+
+QUIERO UN ARCOIRIS MONOCROMO
+\subsection{Information Upload} % (fold)
+\label{sub:Information Upload}
+Otra decisión que se tuvo que tomar a la hora de implementar el robo de imágenes era la concerniente a la forma de transmisión de esas imágenes al servidor controlado por nosotros. 
+
+Consideramos las siguientes opciones:
+\begin{itemize}
+	\item Email
+	\item POST
+	\item scp
+\end{itemize}
+
+
+Prinicpalmente por facilidad en su implementación, así como compatibilidad con la mayor parte de celular posibles\footnote{scp sería mucho más fácil de implementar, pero sólo funcionaría con teléfonos \texttt{Android} que tengan \texttt{BusyBox} instalado, lo que limita mucho el alcance posible del ataque.}, elegimos el método POST.
+
+Para la implementación de este método se utilizó una libería de multipart post (JUAMPI COMPLETA ESTO MEJOR PORQUE NO TENOG NI DIEA QUE PONER ESTOY RE DURO COMO ALIAGAGA Y LOS CUARENTA LADRONES).
+
+
+\subsection{Servidor} % (fold)
+\label{sub:Servidor}
+Del lado del servidor se implementó un script de PHP que se ocupa de recibir los POST, validarlos y almacenar la imagen.
+
+\subsubsection{Validación} % (fold)
+En primer lugar, dado que el servicio de PHP está ubicado en un servidor de acceso público es imprescindible realizar algún tipo de validación de que las solicitudes de POST que llegan sean efectivamente enviadas por la aplicación y no por un tercero. Es por esto que se incluyó en el código de la aplicación una clave secreta con la que se hashea el la imagen. Este hash es replicado oportunamente por el servidor y, en caso de no coincidir, el POST es descartado.
+\label{subsub:Validación}
+
+% subsubsection Validación (end} 
+
+\subsubsection{Envío Diferencial} % (fold)
+\label{ssub:Envío Diferencial}
+Uno de los principales problemas que tuvimos al testear la aplicación era que, en un principio, se subían todas las fotos todo el tiempo. Si bien esto no es un problema del lado del servidor (simplemente se pisaban los archivos, no se generaban duplicados), genera mucho tráfico de red inútilmente. Es por esto que decidimos utilizar un sistema de envío diferencial de imágenes. 
+
+Consideramos dos métodos para realizar esto:
+\begin{itemize}
+	\item Que la aplicación almacene en el mismo teléfono la lista de las imágenes ya subidas (por ejemplo, aprovechando los servicios de SQLite).
+	\item Que la aplicación consulte con el servidor qué imágenes debe mandar. 
+\end{itemize}
+% subsubsection Envío Diferencial (end)
+
+Tanto por simplicidad de implementación como para evitar dejar rastros en el teléfono, decidimos implementar la segunda. Además, tiene la ventaja de que si el usuario desistanala la aplicación (o elimina sus datos locales desde el menú de Androdid) no vuelven a enviarse todas las fotos. 
+
+Como desventaja de esto, se puede mencionar que el teléfono debe realizar más transimisones por la red (aunque muy pequeñas), que podrían ser detectadas por un sniffer.
+
+
+La implementación actual de esta característica está hecha de la siguiente manera: para cada foto a la que tiene acceso, la aplicación envía un POST al servidor con el hash \textbf{SHA1} de la imagen en cuestión. Cuando el servidor lo recibe, verifica si alguna de las imágenes que tiene guardadad tiene ese mismo \textbf{SHA1}. En el caso de no encontrarla, el servidor responde al POST con el mensaje 'OK', tras lo cual la aplicación envía la imágen mediante otro POST.
+En caso contrario, la respuesta es 'FOUND' (y, obviamente, la aplicación no envía la imagen).
+
+% subsection  (end)
+
+% subsection Servidor (end)
+% subsection Information Upload (end)
 % subsection fa_ade (end)
+
+\subsubsection{Mejoras} % (fold)
+\label{ssub:Mejoras}
+\begin{itemize}
+	\item Hacer un solo request para las fotos en vez de muchos.
+	\item Almacenamiento ordenado por IMEI.
+	\item Encriptar las fotos que van por la red (no queremos darle 100 años de perdón a nadie).
+	\item Poder setear sonido como ringtone.
+\end{itemize}
+
+% subsubsection Mejoras (end)
 % section introducci_n (end)
 
 
