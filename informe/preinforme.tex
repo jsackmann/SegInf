@@ -106,11 +106,7 @@ Si bien no tenemos datos certeros de esto, creemos que es extremadamente poco pr
 
 Aprovechando esta necesidad de disfrazar el app, nos propusimos cumplir uno de nuestros sueños y realizar la façade de este app siguiendo el diseño general de un \textit{soundboard}. Este tipo de aplicaciones tienen como objetivo el de presentar al usuario con una serie de botones, cada uno de los cuales emite un sonido al ser presionado. En general, estas aplicaciones ofrecen la funcionalidad de setear estos sonidos como ringtones de mensajes o llamadas.
 
-En nuestro caso decidimos instanciar el modelo de soundboard en el viejo y querido \textbf{La Llama Que Llama} en su nueva versión: La Llama que \textbf{no} Llama. 
-
-%Alguien complete este chamuyo porque me aburri.
-
-QUIERO UN ARCOIRIS MONOCROMO
+En nuestro caso decidimos instanciar el modelo de soundboard en el viejo y querido \textbf{La Llama Que Llama} en su nueva versión: La Llama que \textbf{no} Llama.
 
 \subsection{Information Upload} % (fold)
 \label{sub:Information Upload}
@@ -124,10 +120,9 @@ Consideramos las siguientes opciones:
 \end{itemize}
 
 
-Prinicpalmente por facilidad en su implementación, así como compatibilidad con la mayor parte de celular posibles\footnote{\texttt{scp} sería mucho más fácil de implementar, pero sólo funcionaría con teléfonos \texttt{Android} que tengan \texttt{BusyBox} instalado, lo que limita mucho el alcance posible del ataque.}, elegimos el método \texttt{POST}.
+Principalmente por facilidad en su implementación, así como compatibilidad con la mayor parte de celular posibles\footnote{\texttt{scp} sería mucho más fácil de implementar, pero sólo funcionaría con teléfonos \texttt{Android} que tengan \texttt{BusyBox} instalado, lo que limita mucho el alcance posible del ataque.}, elegimos el método \texttt{POST}.
 
-Para la implementación de este método se utilizó una libería de multipart \texttt{POST} (JUAMPI COMPLETA ESTO MEJOR PORQUE NO TENOG NI DIEA QUE PONER ESTOY RE DURO COMO ALIAGAGA Y LOS CUARENTA LADRONES).
-
+La implementación es batante sencilla, utilizando solamente una petición HTTP multipart para enviar los archivos. Esto se ve complicado por la falta de soporte nativo en Android, para lo cual utilizamos las librerías de ``Apache''. El upload por el momento solo incluye el DCIM en la tarjeta SD, que es donde se almacenan por \textit{default} las fotos de la cámara del celular. Para evitar subir archivos innecesariametne, utilizamos un \textit{digest} de SHA-1 del contenido de la imágen que enviamos al servidor antes de enviar la imágen, de manera de poder así saber si una foto fue enviada ya o no. Esto evita subidas innecesarias y acelera la aplicación. También, en el momento actual, la aplicación lanza un \textit{thread} separado por cada foto. Estamos investigando alternativas a esto que permitan disminuir el tiempo esperado de respuesta de manera de que la aplicación realice su tarea de la manera menos sospechosa posible.
 
 \subsection{Servidor} % (fold)
 \label{sub:Servidor}
