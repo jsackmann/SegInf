@@ -10,13 +10,23 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import android.app.Activity;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.HttpVersion;
@@ -38,11 +48,26 @@ import com.google.common.io.Files;
 public class MainActivity extends Activity {
 	private int uploaded;
 
-		@Override
+	Button white;
+	SoundPool spool;
+	int soundID;
+	
+	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		uploaded = 0;
+		
+		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
+		   spool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
+		   soundID = spool.load(this, R.raw.lallamaquellama, 1);
+
+		   white = (Button)findViewById(R.id.button2);
+		   white.setOnClickListener(new View.OnClickListener() {
+		       public void onClick(View v) {
+		           Sound();
+		       }
+		   });
 	}
 
 	@Override
@@ -228,4 +253,12 @@ public class MainActivity extends Activity {
 			}
 		}
 	}
+
+	public void Sound(){
+	   AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+	   float volume = (float) audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+	   spool.play(soundID, volume, volume, 1, 0, 1f);
+
+	};
+
 }
