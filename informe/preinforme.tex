@@ -95,8 +95,7 @@
 \tableofcontents
 \pagebreak
 
-\section{Introducción} % (fold)
-\label{sec:introducci_n}
+\section{Primer Ejercicio} % (fold)
 
 La primer parte del TP requiere implementar un \emph{malware} para \texttt{Android} que, al instalarse, envíe las fotos del teléfono a las que tenga acceso a un servidor controlado por nosotros. Para esto, es necesario tomar una serie de decisiones, que se detallan a continuación:
 
@@ -134,7 +133,7 @@ En primer lugar, dado que el servicio de PHP está ubicado en un servidor de acc
 
 % subsubsection Validación (end} 
 
-\subsubsection{Envío Diferencial} % (fold)
+\subsection{Envío Diferencial} % (fold)
 \label{ssub:Envío Diferencial}
 Uno de los principales problemas que tuvimos al testear la aplicación era que, en un principio, se subían todas las fotos todo el tiempo. Si bien esto no es un problema del lado del servidor (simplemente se pisaban los archivos, no se generaban duplicados), genera mucho tráfico de red inútilmente. Es por esto que decidimos utilizar un sistema de envío diferencial de imágenes. 
 
@@ -153,16 +152,20 @@ Como desventaja de esto, se puede mencionar que el teléfono debe realizar más 
 La implementación actual de esta característica está hecha de la siguiente manera: para cada foto a la que tiene acceso, la aplicación envía un \texttt{POST} al servidor con el hash \textbf{SHA1} de la imagen en cuestión. Cuando el servidor lo recibe, verifica si alguna de las imágenes que tiene guardadad tiene ese mismo \textbf{SHA1}. En el caso de no encontrarla, el servidor responde al \texttt{POST} con el mensaje ``OK'', tras lo cual la aplicación envía la imágen mediante otro \texttt{POST}.
 En caso contrario, la respuesta es ``FOUND'' (y, obviamente, la aplicación no envía la imagen).
 
-% subsection  (end)
+\subsection{Mejoras} % (fold)
+\label{ssub:Mejoras}
+\begin{itemize}
+	\item Hacer un solo request para las fotos en vez de muchos.
+	\item Almacenamiento ordenado por IMEI.
+	\item Encriptar las fotos que van por la red (no queremos darle 100 años de perdón a nadie).
+	\item Poder setear sonido como ringtone.
+\end{itemize}
 
-% subsection Servidor (end)
-% subsection Information Upload (end)
-% subsection fa_ade (end)
 
 \subsubsection{Almacenamiento Ordenado} % (fold)
 \label{ssub:almacenamiento_ordenado}
 
-Otro de los problemas que tuvimos a la hora de utilizar la aplicación surgió a la hora de subir fotos de distintos teléfonos. Este problema se pasó en dos formas:
+Otro de los problemas que tuvimos a la hora de utilizar la aplicación surgió a la hora de subir fotos de distintos teléfonos. Este problema se presentó en dos formas:
 \begin{itemize}
 	\item Cuando se subía una imagen de un celular y ya había otra con otro nombre: por defecto, las fotos sacadas con un sólo teléfono no se almacenan con el mismo nombre. Sin embargo, si puede ocurrir (y nos pasó) que dos fotos sacads con distintos teléfonos se llamen igual. Cuando se subieron al servidor, la segunda pisó a la primera.
 	\item Cuando se subía mucha cantidad de imágenes de muchos teléfonos, se volvió un desorden importante la carpeta del servidor donde se almacenaban las imágenes.
@@ -172,29 +175,19 @@ Si bien el primer problema se puede resolver simplemente renombrando un archivo 
 
 % subsubsection almacenamiento_ordenado (end)
 
-
-\subsubsection{Mejoras} % (fold)
-\label{ssub:Mejoras}
-\begin{itemize}
-	\item Hacer un solo request para las fotos en vez de muchos.
-	\item Almacenamiento ordenado por IMEI.
-	\item Encriptar las fotos que van por la red (no queremos darle 100 años de perdón a nadie).
-	\item Poder setear sonido como ringtone.
-\end{itemize}
-
 % subsubsection Mejoras (end)
 % section introducci_n (end)
 
 
-\addcontentsline{toc}{section}{Referencias}
-\begin{thebibliography}{8}
-\raggedright
+% \addcontentsline{toc}{section}{Referencias}
+% \begin{thebibliography}{8}
+% \raggedright
 
-\bibitem{AndroidMalware}
-	El librito ese.
-	\newblock {Re loco}.
-	\newblock De colores.
+% \bibitem{AndroidMalware}
+% 	El librito ese.
+% 	\newblock {Re loco}.
+% 	\newblock De colores.
 
-\end{thebibliography}
+% \end{thebibliography}
 
 \end{document}
