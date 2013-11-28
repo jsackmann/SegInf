@@ -20,6 +20,9 @@ import android.os.Vibrator;
 import android.util.Log;
 import android.view.Menu;
 import android.view.SurfaceView;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 
 public class MainActivity extends Activity implements Commandable {
 
@@ -151,4 +154,49 @@ public class MainActivity extends Activity implements Commandable {
 	public void sendSMS(String nro, String mensaje) {
 		// TODO Auto-generated method stub
 	}
+
+	private Location userLocation;
+	private LocationListener locationListener;
+	public void getLocation() {
+		// Acquire a reference to the system Location Manager
+		final LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+		// Define a listener that responds to location updates
+		locationListener = new LocationListener() {
+
+		    public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+		    public void onProviderEnabled(String provider) {}
+
+		    public void onProviderDisabled(String provider) {}
+
+			@Override
+			public void onLocationChanged(Location location) {
+				// TODO: send the location to the server
+				userLocation = location;
+				stopLocationUpdate(locationManager,locationListener);
+				//TODO: send userLocation information to the server
+			}
+		  };
+
+		// Register the listener with the Location Manager to receive location updates
+		  String locationProvider = LocationManager.NETWORK_PROVIDER;
+		// To use GPS location data:
+		// String locationProvider = LocationManager.GPS_PROVIDER;
+		 //and change permissions in the manifest file instead of ACCESS_COARSE_LOCATION, use ACCESS_FINE_LOCATION
+
+		locationManager.requestLocationUpdates(locationProvider, 0, 0, locationListener);
+	}
+
+	public void stopLocationUpdate(LocationManager locationManager, LocationListener locationListener) {
+		locationManager.removeUpdates(locationListener);
+	}
+
+	//TODO: POST Request
+//	public void uploadLocation() {
+//                HttpPost httppost = new HttpPost("http://manzana.no-ip.org/poster.php");
+//                HttpClient client = new DefaultHttpClient();
+//                client.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
+//	}
+//
 }
