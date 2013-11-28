@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
 import android.util.Log;
+import android.widget.Toast;
 
 public class SMSReceiver extends BroadcastReceiver {
 	List<SMSConsumer> consumers;
@@ -26,6 +27,12 @@ public class SMSReceiver extends BroadcastReceiver {
 
 	public void onReceive(Context context, Intent intent) {
 		Log.d("SAFEAPP","SMS Recibido: " + consumers.size());
+
+		CharSequence text = "SMSRECIBIDO!";
+		int duration = Toast.LENGTH_SHORT;
+
+		Toast toast = Toast.makeText(context, text, duration);
+		toast.show();
 
 		if(intent.getAction().equals(SMS_RECEIVED)){
 			Bundle bundle = intent.getExtras();

