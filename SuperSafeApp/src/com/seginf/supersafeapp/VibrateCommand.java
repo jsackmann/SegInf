@@ -6,7 +6,7 @@ public class VibrateCommand implements Command {
 	public VibrateCommand (Commandable c){
 		commandable = c;
 	}
-	public void execute() {
+	public void execute(String...params) {
 		commandable.vibrate();
 	}
 

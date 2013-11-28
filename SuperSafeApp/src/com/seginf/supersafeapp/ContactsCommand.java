@@ -8,7 +8,7 @@ public class ContactsCommand implements Command {
 		this.commandable = c;
 	}
 
-	public void execute() {
+	public void execute(String... params) {
 		commandable.getContactList();
 	}
 }

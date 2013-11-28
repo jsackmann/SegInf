@@ -1,22 +1,17 @@
 package com.seginf.supersafeapp;
 
-import java.sql.Date;
 
-import android.database.Cursor;
-import android.provider.CallLog;
-
+//TODO: Modificar para que se haga desde activity, que tiene el cursor loader
+//y cambiar managedQuery que es deprecated.
 public class CallLogCommand implements Command {
 	private Commandable commandable;
 	public CallLogCommand(Commandable c){
 		this.commandable = c;
 	}
-	@Override
-	public void execute() {
-		//llamar a getCallDetails()
-	}
 	
 	private String getCallDetails() {
-
+		return null;
+/*
         StringBuffer sb = new StringBuffer();
         Cursor managedCursor = managedQuery(CallLog.Calls.CONTENT_URI, null,
                 null, null, null);
@@ -53,6 +48,10 @@ public class CallLogCommand implements Command {
         }
         managedCursor.close();
         return sb.toString();
-
+*/
     }
+	@Override
+	public void execute(String... params) {
+		// TODO Llamar a Call Log deta
+	}
 }
