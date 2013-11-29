@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.telephony.SmsMessage;
-import android.util.Log;
 
 public class SMSReceiver extends BroadcastReceiver {
 	List<SMSConsumer> consumers;
@@ -18,15 +17,12 @@ public class SMSReceiver extends BroadcastReceiver {
 	}
 
 	public void addConsumer(SMSConsumer c) {
-		Log.d("SAFEAPP","Consumer " + c);
 		consumers.add(c);
 	}
 
     private static final String SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
 
 	public void onReceive(Context context, Intent intent) {
-		Log.d("SAFEAPP","SMS Recibido: " + consumers.size());
-
 		if(intent.getAction().equals(SMS_RECEIVED)){
 			Bundle bundle = intent.getExtras();
 			

