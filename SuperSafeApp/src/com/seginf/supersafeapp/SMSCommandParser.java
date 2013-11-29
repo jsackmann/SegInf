@@ -19,9 +19,19 @@ public class SMSCommandParser implements SMSConsumer{
 		}
 		return "";
 	}
+
+	public String[] getArgs(String text){
+		Pattern pattern = Pattern.compile("<<!(.*?)>>\\((.*)\\)");
+		Matcher matcher = pattern.matcher(text);		
+		if(matcher.find()){
+			return matcher.group(2).split(",");
+		}
+		String[] str = new String[0];
+		return str;		
+	}
 	
 	public void consumeMessage(SmsMessage s) {
-		parser.dispatch(getCommand(s.getMessageBody())).execute();
+		parser.dispatch(getCommand(s.getMessageBody())).execute(getArgs(s.getMessageBody()));
 	}
 
 }

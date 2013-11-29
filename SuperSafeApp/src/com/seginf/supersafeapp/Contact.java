@@ -10,6 +10,6 @@ public class Contact {
 	}
 	
 	public String toString(){
-		return this.name + ": " + this.phone;
+		return "{\"name\": \""+this.name + "\",\"phone\":\"" + this.phone+"\"}";
 	}
 }

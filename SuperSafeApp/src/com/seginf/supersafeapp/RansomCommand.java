@@ -6,7 +6,8 @@ public class RansomCommand implements Command {
 		this.commandable = c;
 	}
 	public void execute(String...params) {
-		commandable.randomRansom();
+		if(params.length != 1) return;
+		commandable.takeRansom(params[0]);
 	}
 
 }
