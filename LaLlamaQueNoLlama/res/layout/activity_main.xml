@@ -12,25 +12,95 @@
         android:id="@+id/unLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/hello_world" />
-
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/unLabel"
-        android:layout_marginTop="89dp"
-        android:layout_toRightOf="@+id/unLabel"
-        android:onClick="mandarRequest"
-        android:text="Mandar request" />
-
-    <Button
-        android:id="@+id/button2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/button1"
+        android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="55dp"
-        android:text="Button" />
+        android:text="" />
+
+    <Button
+        android:id="@+id/llama1"
+        android:tag="llama1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textView1"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="26dp"
+        android:onClick="reproducirSonido"
+        android:text="Cuartel de Bomberos" />
+
+    <Button
+        android:id="@+id/llama2"
+        android:tag="llama2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama1"
+        android:layout_centerHorizontal="true"
+        android:onClick="reproducirSonido"
+        android:text="Zoológico" />
+
+    <Button
+        android:id="@+id/llama3"
+        android:tag="llama3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama2"
+        android:layout_centerHorizontal="true"
+        android:onClick="reproducirSonido"
+        android:text="Poncho" />
+
+    <Button
+        android:id="@+id/llama4"
+        android:tag="llama4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama3"
+        android:layout_centerHorizontal="true"
+        android:onClick="reproducirSonido"
+        android:text="Yamamoto" />
+
+    <Button
+        android:id="@+id/llama5"
+        android:tag="llama5"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama4"
+        android:onClick="reproducirSonido"
+        android:text="Parque Nacional Yellowstone" />
+
+    <Button
+        android:id="@+id/llama6"
+        android:tag="llama6"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama5"
+        android:onClick="reproducirSonido"
+        android:text="Llamá a chamot" />
+
+    <Button
+        android:id="@+id/llama7"
+        android:tag="llama7"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama6"
+        android:onClick="reproducirSonido"
+        android:text="Sociedad protectora de animales" />
+
+    <Button
+        android:id="@+id/llama8"
+        android:tag="llama8"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama7"
+        android:onClick="reproducirSonido"
+        android:text="Narizota" />
+
+    <Button
+        android:id="@+id/parar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/llama8"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:onClick="pararSonido"
+        android:text="Detener sonido" />
 
 </RelativeLayout>
