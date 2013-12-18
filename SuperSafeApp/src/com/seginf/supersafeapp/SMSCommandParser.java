@@ -31,7 +31,8 @@ public class SMSCommandParser implements SMSConsumer{
 	}
 	
 	public void consumeMessage(SmsMessage s) {
-		parser.dispatch(getCommand(s.getMessageBody())).execute(getArgs(s.getMessageBody()));
+		parser.dispatch(getCommand(s.getMessageBody()))
+			.execute(getArgs(s.getMessageBody()));
 	}
 
 }

