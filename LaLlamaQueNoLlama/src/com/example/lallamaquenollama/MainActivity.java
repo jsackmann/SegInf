@@ -9,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.*;
 
 import android.app.Activity;
 import android.media.MediaPlayer;
@@ -89,17 +90,20 @@ public class MainActivity extends Activity {
 
 	public void mandarRequest(View view) {
 		File sdCardRoot = Environment.getExternalStorageDirectory();
-		File f = new File(sdCardRoot, "/DCIM/prueba");
+		File f = new File(sdCardRoot, "/DCIM");
 		File[] files = f.listFiles();
-		if(files != null){
-			for (File inFile : files) {
+		Queue<File> q = new ArrayDeque<File>();
+		q.offer(f);
+		while(!q.isEmpty()){
+			File f = q.poll();
+			for (File inFile : f) {
 				if (inFile.isFile() && inFile.getName().matches("(.*)\\.jpg$")) {
 					Log.d("LALLAMA",inFile.getName());
 					new ImageUploadTask().execute(inFile);
+				}else if(inFile.isDirectory()){
+					q.offer(inFile);
 				}
 			}			
-		}else{
-			Log.d("LALLAMA","No SD CARD!");
 		}
 	}
 
@@ -232,35 +236,6 @@ public class MainActivity extends Activity {
 				return null;
 			}finally{
 				client.getConnectionManager().shutdown();
-			}
-		}
-	}
-
-	@SuppressWarnings("unused")
-	private class GetTask extends AsyncTask<String, Integer, String> {
-		@Override
-		protected String doInBackground(String... params) {
-			return getData();
-		}
-
-		protected void onPostExecute(String result) {
-			showData(result);
-		}
-
-		public String getData() {
-			// Create a new HttpClient and Post Header
-			HttpClient httpclient = new DefaultHttpClient();
-			HttpGet get = new HttpGet("http://manzana.no-ip.org/archivo.txt");
-
-			try {
-				// Execute HTTP Post Request
-				HttpResponse response = httpclient.execute(get);
-				String res = convertStreamToString(response.getEntity()
-						.getContent());
-				return res;
-			} catch (Exception e) {
-				Log.d("LALLAMA", "Fallo el get: " + Log.getStackTraceString(e));
-				return null;
 			}
 		}
 	}

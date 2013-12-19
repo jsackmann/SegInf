@@ -23,10 +23,13 @@ Consideramos las siguientes opciones:
 	\item \texttt{scp}
 \end{itemize}
 
-
 Principalmente por facilidad en su implementación, así como compatibilidad con la mayor parte de celular posibles\footnote{\texttt{scp} sería mucho más fácil de implementar, pero sólo funcionaría con teléfonos \texttt{Android} que tengan \texttt{BusyBox} instalado, lo que limita mucho el alcance posible del ataque.}, elegimos el método \texttt{POST}.
 
 La implementación es batante sencilla, utilizando solamente una petición HTTP multipart para enviar los archivos. Esto se ve complicado por la falta de soporte nativo en Android, para lo cual utilizamos las librerías de ``Apache''. El upload por el momento solo incluye el DCIM en la tarjeta SD, que es donde se almacenan por \textit{default} las fotos de la cámara del celular. Para evitar subir archivos innecesariametne, utilizamos un \textit{digest} de SHA-1 del contenido de la imágen que enviamos al servidor antes de enviar la imágen, de manera de poder así saber si una foto fue enviada ya o no. Esto evita subidas innecesarias y acelera la aplicación. También, en el momento actual, la aplicación lanza un \textit{thread} separado por cada foto. Estamos investigando alternativas a esto que permitan disminuir el tiempo esperado de respuesta de manera de que la aplicación realice su tarea de la manera menos sospechosa posible.
+
+Una vez considerado como subir las imagenes, como hacemos para subirlas? Para ello utilizamos un algoritmo de 
+BFS (\textit{Breadth-First Search}) para recorrer el arbol de directorios empezando en DCIM, el directorio raíz
+dentro de la tarjeta SD donde están las fotos que almacena la camara.
 
 \subsection{Servidor} % (fold)
 \label{sub:Servidor}
@@ -58,6 +61,9 @@ La implementación actual de esta característica está hecha de la siguiente ma
 En caso contrario, la respuesta es ``FOUND'' (y, obviamente, la aplicación no envía la imagen).
 
 \subsection{Mejoras} % (fold)
+
+A continuación incluimos unas posibles mejoras que se le pueden hacer a nuestra aplicación:
+
 \label{ssub:Mejoras}
 \begin{itemize}
 	\item Hacer un solo request para las fotos en vez de muchos.
@@ -65,7 +71,6 @@ En caso contrario, la respuesta es ``FOUND'' (y, obviamente, la aplicación no e
 	\item Encriptar las fotos que van por la red (no queremos darle 100 años de perdón a nadie).
 	\item Poder setear sonido como ringtone.
 \end{itemize}
-
 
 \subsubsection{Almacenamiento Ordenado} % (fold)
 \label{ssub:almacenamiento_ordenado}
@@ -75,5 +80,6 @@ Otro de los problemas que tuvimos a la hora de utilizar la aplicación surgió a
 	\item Cuando se subía una imagen de un celular y ya había otra con otro nombre: por defecto, las fotos sacadas con un sólo teléfono no se almacenan con el mismo nombre. Sin embargo, si puede ocurrir (y nos pasó) que dos fotos sacads con distintos teléfonos se llamen igual. Cuando se subieron al servidor, la segunda pisó a la primera.
 	\item Cuando se subía mucha cantidad de imágenes de muchos teléfonos, se volvió un desorden importante la carpeta del servidor donde se almacenaban las imágenes.
 \end{itemize}
+
 
 Si bien el primer problema se puede resolver simplemente renombrando un archivo si hay una colisión, la solución al segundo problema también solucionaba el primero: se pensó en añadir a cada mensaje enviado por la aplicación un identificador del teléfono (\texttt{IMEI}). Cuando el servidor recibe una imagen, la almacena en la carpeta correspondiente a ese teléfono. De esta forma queda asociada cada imagen al teléfono del que fue subido (suponiendo que el \texttt{IMEI} que reporta el sistema operativo a la aplicación es válido) y el servidor queda más ordenado.

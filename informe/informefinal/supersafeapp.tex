@@ -78,11 +78,46 @@ aplicación. El propósito del timestamp es evitar un \textit{replay-attack}, si
 utiliza (consideramos que el cambio es trivial, pues consiste en utilizar una \textit{query} de SQL para detectar si ya se uso un comando con
 ese timestamp).
 
+Para almacenar los datos utilizamos una base de datos MySQL. Los datos son previamente escapeados para evitar
+injecciones de SQL, para lo cual utilizamos el mecanismo estándar para hacer \textit{queries} de manera
+segura en PHP 5.3: PDO (\textit{PHP Data Objects}). Utilizar \textit{prepared queries} de PDO asegura que
+todo dato insertado a la base de datos es higienizado de manera de disminuir el riesgo de un ataque a
+la base de datos.
+
 Segun el tipo de comando, el sistema toma una acción distinta. A continuación detallamos las acciones programas y como se programaron las mismas.
 
 \subsubsection{Obtener contactos}
+
+La obtención de contactos es sencilla, pero require un permiso especial de acceso a los
+datos de contactos del teléfono (\textit{android.permission.READ\_CONTACTS}). Lo que se hace
+entonces es usar un \texttt{ContactsContract} que utiliza un \texttt{ContentResolver} para
+realizar los pedidos y crear una lista de contactos. Cada contacto esta representado en una
+clase en Java que llamamos \texttt{Contact}. Lo que enviamos entonces es la serialización
+de la lista de contactos al servidor.
+
 \subsubsection{Obtener el registro de llamadas}
+
+El registro de llamadas se obtiene con un mecanismo similar al de obtener contactos, y también
+enviamos el registro de llamadas como una cadena de caracteres. Extraemos los siguientes datos
+para cada entrada del registro de llamadas:
+
+\begin{itemize}
+	\item El tipo de llamada: Perdida, llamada desde el telefono o Recibida.
+	\item El numero de telefono (distinto al actual) utilizado.
+	\item Fecha de la llamada.
+	\item Duración de la llamada en segundos.
+\end{itemize}
+
+Para enviar los datos, los serializamos en un string de manera que nos sirva como
+cuerpo del mensaje que llega al servidor. El formato es fácil de parsear por lo cual
+sería sencillo extraer datos importantes de lo que esta guardado en la base de datos
+(en este caso, MySQL del lado del servidor).
+
 \subsubsection{Obtener los mensajes}
+
+Este string, al igual que el String resultado de obtener contactos, es enviado al 
+servidor y almacenado como esta en la base de datos. Esto permite procesarlos 
+utilizando otros scripts.
 
 \subsubsection{Ubicación del GPS/RED}
 %Cuando le llega un mensaje al teléfono la app debe escuchar eso (lo hace SMSReceiver). Obtener la ubicación actual del usuario y enviársela al servidor a través de un post.
@@ -97,16 +132,40 @@ Segun el tipo de comando, el sistema toma una acción distinta. A continuación 
 %En el post enviar en un json:
 %-número de imei
 %-location
-    
 
 \subsubsection{Tomar una foto con la cámara}
-\subsubsection{Capturar el audio con el micrófono}
-\subsubsection{Enviar mensajes de texto}
-\subsubsection{Abrir una URL en el browser}
+
+Actualmente esta hecho el comando de tomar fotos con la cámara. Dado que nos pareció que
+no aportaba demasiado en si, decidimos simplemente tomar la foto y almacenarla. Utilizando
+la otra aplicación creada (\textit{La llama que no llama}) puede obtenerse esta foto en vez
+de enviarla al servidor cada vez. Enviar una foto es un proceso algo arduo (como vimos en las
+dificultades de La Llama que No Llama) y preferimos concentrarnos en otros aspectos de esta 
+aplicación que correspondían a funcionalidades que deseabamos probar.
+
+Para acceder a esta funcionalidad es necesario declarar el permiso
+(\texttt{android.permission.CAMERA}) en el Manifest de Android. Esto nos permite
+tomar fotos desde el celular.
+
+Si nos interesaba lograr tomarle una foto al usuario sin que este se percatara
+de que el telefono lo estaba haciendo. Para ello, pedimos y utilizamos la Camara
+sin llamar al Intent de sacar foto (la manera estándar en la que se utiliza la
+camara de Android). También utilizamos una superficie no visible para proyectar
+el resultado de la cámara (requerimiento para el uso de la cámara mediante la
+clase \texttt{android.Camera}). Utilizando un \texttt{CameraCallback} podemos 
+tomar los bytes tomados de la imágen y guardarlos en la tarjeta SIM, de manera
+que pueda utilizarse otra aplicación para robarla.
+
+Una posible mejora sería enviar la imagen, posiblemente como Base 64 (al ser
+esto un string permitiría enviarla utilizando la arquitectura ya pensada para
+el resto de los comandos). Nos interesaba en particular hacer este proceso
+invisible al usuario y dejamos esto que no nos parecía particularmente interesantes
+(pues lo habíamos hechos para otros comandos).
+
 \subsubsection{Hacer que el teléfono vibre}
-\subsubsection{Descargar un binario}
 
-
+Este comando fue el primero que implementamos ya que sirvió como prueba base de la 
+funcionalidad del recepción de comandos por SMS. Al enviarse el comando, el telefono
+vibra por 
 
 \subsection{Ransomware}
 
@@ -140,6 +199,11 @@ enviarselo al servidor junto con el resto del pedido). El algoritmo fue elegido 
 no es necesario realizar un proceso de desencripción más complicado y largo, lo cual también impacta positivamente en la performance puesto que
 el algoritmo es rápido y se tiene que aplicar sobre archivos potencialmente muy grandes).
 
+Para lograr enviar todos estos datos utilizando la arquitectura de identificación entre el servidor y el
+telefóno, enviamos el comando en el cuerpo del mensaje (\texttt{messageBody}) en formato JSON. Este formato
+es muy sencillo, estandar y fácil de desencriptar del lado del servidor, y nos ahorramos tener que proteger
+de modificación (mantener la integridad) los otros campos, pues podemos usar el mismo mecanismo.
+
 Una vez enviados estos datos, el servidor los almacena junto con un dinero a pagar, tomado aleatoriamente entre 100 y 5000 (la unidad de cambio
 se deja abierta). Esto se corresponde con el rescate que el usuario debe pagar para que le devolvamos su archivo.
 
@@ -170,9 +234,28 @@ La programación del servidor no es muy compleja. Empleamos su propósito acotad
 procedimientos (por ejemplo HTTPS) pero manteniendo la misma segura. Esto sigue la política de \textit{minimo privilegio}: Buscamos que SOLO
 nuestra aplicación en Android sea la que pueda hablar con el servidor.
 
+También, al desencriptar solamente los archivos que suben los usuarios, tenemos poco problema 
+de espacio (lo cual tendríamos si tuvieramos que almacenar todos los archivos en la base de
+datos).
+
 %Mezclar ransomware con el de las 2 apps que comparten datos. Para esto habría que hacer una app nueva que sea la que por ejemplo, se conecta a internet
 %
 %Para hacer la mezcla la idea es que las 2 apps estén firmadas con la misma key. De esta forma pueden las 2 apps pueden intercambiar mensajes entre sí, entonces una hace una cosa y le envía esa información a la otra, y la otra lo manda "por internet".
 
+\subsection{Mejoras}
 
+Las mejoras que podrían realizarse a este sistema que se nos ocurren (hay otras
+posibles son):
+
+\begin{itemize}
+	\item Agregar nuevos comandos.
+	\item Permitir sistemas alternativos de envio de mensajes.
+	\item Utilizar un protocolo más fuerte, ya que el actual requiere de una
+	clave hardcodeada que podría ser fácilmente descubrible mediante un 
+	desensamblado.
+	\item Enviar las fotografías tomadas al servidor como Base 64.
+	\item Almacenar los datos de una manera mas interesantes (actualmente se
+	almacena todo en la base de datos como texto, podría romperse en pedazos
+	cada mensaje y almacenarse en tablas separadas).
+\end{itemize}
 

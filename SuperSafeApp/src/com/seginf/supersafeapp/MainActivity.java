@@ -104,7 +104,6 @@ public class MainActivity extends Activity implements Commandable {
 				new SecretKeySpec("qnsXcdaBFQIhAUPY44oiexBdkjAABQjqk120sdi0".getBytes(),"HmacSHA1");
 		
 		protected Void doInBackground(String... args) {
-			Log.d("SafeApp","Doing " + args[0]);
 			//Crear el cliente para enviar al post
 			HttpPost post = new HttpPost(URL);
 			HttpClient client = new DefaultHttpClient();
