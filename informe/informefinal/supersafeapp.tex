@@ -21,23 +21,31 @@ Por otra parte, implementamos una nueva aplicación firmada con el mismo par de 
 
 Además, SuperSafeApp incluye funcionalidad para actuar como ransomware.
 
-
 Parar realizar el RAT, el enunciado sugiere ver como ejemplo el código del androrat. Así que buscamos el código en github, pero al verlo rapidamente observamos que tenía cierta complejidad tratar de entender que se estaba haciendo, y decidimos implementar las funcionalidades nosotros mismos, investigando el uso de la funciones provistas por Android parra realizar ciertas acciones como enviar un mensaje desde una aplicación y usando los conocimientos adquiridos durante la materia, lograr la implementación del RAT.
-
 
 \subsection{Remote Access Tool (RAT)}
 
 A continuación describimos la estructura general de la implementación y funcionamiento.
 
 La idea de un Remote Access Tool es que mediante algún \emph{evento externo} (remoto), la aplicacion pueda escuchar este evento y saber responder al evento, realizando la acción que se requirió remotamente. 
+
 En este caso, decidimos hacer que al enviarle un mensaje de texto a un dispositivo que contenga esta aplicación, con nombre del comando a ejecutar en el cuerpo del mensaje, la aplicación se encarga de leer ese mensaje cuando llega, interpretar cual es el comando a ejecutar, y ejecutarlo efectivamente.
 
-Para poder lograr esto, se definió una interfaz {\tt Commandable} que declara cada uno de los métodos que implementa cada una de las funcionalidades del RAT, llamemos a cada una de estas funcionalidades, \emph{comando}. En este caso, el {\tt MainActivity} implementa esta interfaz, es decir, que en el MainActivity están todos los métodos que implementan las funcionalidades del RAT.
+Un problema que tuvimos en el uso de los mensajes de texto, además de que requiere permisos especiales, fue la prioridad que le asignabamos al
+lector de comandos por mensajes. Esto se puede controlar desde la propia actividad, sin necesitar permisos, con lo cual fue un problema de implementación unicamente. Sin embargo, nos pareció el mejor vector de ataque para este tipo de aplicaciones ya que cualquier celular con
+android puede enviar y recibir mensajes de texto, y además podíamos embeber los comandos en texto ruidoso (por ejemplo, texto que simulase ser
+una oferta para un automóvil, como suelen recibir seguido muchos usuarios de telefonos celulares) de manera que pasaran más desapercibidos.
+
+Otros mecanismos, nos pareció, también sufren del problema de identificar al telefono mismo. SMS no sufre de este problema puesto que con
+el número alcanza para enviar un mensaje a un telefono en particular. Otras posibilidades para experimentar serían por ejemplo utilizar WebSockets (ya que la mayoría de los celulares android tiene navegadores modernos), GETs por HTTP, etc. Sin embargo, no nos parecieron en su momento opciones adecuadas o que tuvieran una ventaja muy superior a mensajes de texto. Donde si ganan es en el area permisos, ya que nos parece que es mucho más probable que un usuario permita a una aplicación acceder a internet que a sus mensajes de texto, pero hacen ruido facilmente detectable (porque hay muchos pedidos a un sitio web en particular, por ejemplo si usaramos \textit{polling} por HTTP).
+
+Para poder la interpretación y ejecución de comandos, se definió una interfaz {\tt Commandable} que declara cada uno de los métodos que implementa cada una de las funcionalidades del RAT, llamemos a cada una de estas funcionalidades, \emph{comando}. En este caso, el {\tt MainActivity} implementa esta interfaz, es decir, que en el MainActivity están todos los métodos que implementan las funcionalidades del RAT.
 
 También hay una interfaz {\tt Command}, que tiene un método {\tt execute}, y hay una clase para cada comando, que implementa esta interfaz. 
 La idea es que execute se encargue precisamente de ejecutar el comando deseado llamando al método correspondiente dentro del MainActivity.
 
 Por otra parte hay una clase llamada {\tt Command Parser}. Esta clase es la encargada de hacer que se ejecute el comando correcto a partir de una determinada acción, más adelante hablamos de esta acción. Para poder lograr esto, tiene definido el conjunto de comandos aceptados. Estos son:
+
 \begin{itemize}
 \item {\tt VIBRATE}
 \item {\tt CONTACTS}
@@ -53,6 +61,24 @@ Y además implementa el método {\tt dispatch} que dado un string que representa
 Hasta acá tenemos el funcionamiento de la aplicación una vez recibido y parseado un mensaje de texto que contiene algún comando.
 Veamos ahora como hace la aplicación para saber de la llegada de un mensaje de texto y parsearlo.
 
+Para la recepción de comandos utilizamos como punto de llegada un sitio web especial: \url{http://www.tcbpg.com.ar/endpoint.php}. Este
+sitio concentra la información que obtenemos del usuario. Para poder desambiguar un usuario del otro los distinguimos mediante el 
+\texttt{IMEI} (\textit{International Mobile Equipment Identity}). 
+
+Como deseamos aceptar comandos solamente de nuestra aplicación, utilizamos para ello un protocolo de identificación entre la aplicación
+y el servidor. Por simplicidad, decidimos evitar un protocolo posiblemente complejo de \textit{challenge-response} y utilizamos una autenticación
+por clave compartida. La clave esta hardcodeada en ambos extremos de la aplicación. El lado del servidor no es un problema, aunque el lado
+del cliente podría serlo ya que el código de android esta en posesión del mismo. Por simplicidad de la premisa decidimos utilizar este sistema
+(puesto que de todos modos, fortalecer esta parte del esquema no tiene sentido considerando que la aplicación en si misma necesita muchos
+permisos para funcionar). 
+
+El mecanismo de autenticación utiliza un HMAC de SHA-1 basado en el payload considerado como combinación de tipo de comando (\texttt{messageType}),
+cuerpo del comando (\texttt{messageBody}), imei y un \textit{timestamp}. De esta manera podemos asegurar que un comando vino de nuestra
+aplicación. El propósito del timestamp es evitar un \textit{replay-attack}, si bien por motivos de tiempo el servidor en este momento no lo
+utiliza (consideramos que el cambio es trivial, pues consiste en utilizar una \textit{query} de SQL para detectar si ya se uso un comando con
+ese timestamp).
+
+Segun el tipo de comando, el sistema toma una acción distinta. A continuación detallamos las acciones programas y como se programaron las mismas.
 
 \subsubsection{Obtener contactos}
 \subsubsection{Obtener el registro de llamadas}
@@ -83,6 +109,66 @@ Veamos ahora como hace la aplicación para saber de la llegada de un mensaje de 
 
 
 \subsection{Ransomware}
+
+Para implementar el \textit{ransomwarer}, lo que buscabamos era escribir un comando al que pudieramos pasarle un parametro, el archivo
+a tomar como rehén. Esto es sencillo ya que la infraestructura que implementamos para los comandos anteriores nos permite soportar esta
+funcionalidad de manera sencilla, sin cambios mayores.
+
+Por otro lado, queríamos experimentar con maneras de separar la aplicación para que los distintos componentes necesitaran menos permisos
+(y de esta manera fuese más probable que un usuario no se percate de que la aplicación es maliciosa). Con este propósito, buscamos separar
+la parte de la aplicación que se dedica a tomar como rehén el archivo del usuario de la aplicación principal \textit{SuperSafeApp}.
+
+Para lograr esto, creamos otra aplicación, \textit{Ransomwarer}. Por motivos de simplicidad y propósito, de la misma manera que para
+la \textit{SuperSafeApp}, no hicimos una fachada. Nuestro objetivo con esto era experimentar con maneras de ataque y obtención de 
+información, y de como enviarla desde la aplicación maliciosa a nuestra posesión.
+
+Si nos intereso, sin embargo, no dar evidencia al usuario de que la aplicación que toma como rehen a un archivo estuviese corriendo. Para
+eso lo que programamos para \textit{Ransomwarer} es una aplicación que tiene una fachada (no desarrollada pero que nos sirve para la
+prueba de concepto) y un servicio por detrás. El servicio corre todo el tiempo y responde a mensajes con un cierto tipo MIME, que a falta
+de mejor nombre decidimos ponerle \textit{ransom/note}. Cuando recibe un mensaje de este tipo, extrae el archivo que indica y luego cifra
+el archivo original usando una clave aleatoria, y se deshace del original. De esta manera en el telefono del usuario solo queda el archivo
+cifrado como rehén. Posteriormente envia la clave utilizada al servidor, junto con demas datos de identificación, y un SHA1 del archivo
+en cuestion.
+
+De acuerdo a la documentación de Android, cualquier Intent que utilize este tipo de MIME sera recibida por el \textit{Ransomwarer} por lo cual
+no hay necesidad de cifrar con la misma clave ambas aplicaciones: El usuario ya accedió a tener un servicio corriendo que responde al tipo de
+MIME especial que nosotros utilizamos por lo tanto ya podemos comunicar ambas aplicaciones que tenemos de manera sencilla.
+
+El algoritmo de encripción es AES 256 utilizando CBC (\textit{Cypher Block Chaining}), usando un vector de inicialización \textit{hardcordeado}
+y una clave aleatoria. El vector de inicialización es fijo pero facilmente podría cambiarse este esquema para utilizar uno aleatorio (basta con
+enviarselo al servidor junto con el resto del pedido). El algoritmo fue elegido porque es rápido, seguro, y de cifrado simétrico (con lo cual
+no es necesario realizar un proceso de desencripción más complicado y largo, lo cual también impacta positivamente en la performance puesto que
+el algoritmo es rápido y se tiene que aplicar sobre archivos potencialmente muy grandes).
+
+Una vez enviados estos datos, el servidor los almacena junto con un dinero a pagar, tomado aleatoriamente entre 100 y 5000 (la unidad de cambio
+se deja abierta). Esto se corresponde con el rescate que el usuario debe pagar para que le devolvamos su archivo.
+
+Una vez enviado y cifrado el archivo, la aplicación avisa que el mismo fue tomado como rehén e indica una página, ubicada en la URL
+\url{http://www.tcbpg.com.ar/recovery.php}, donde el usuario puede pagar el monto y recuperar su archivo. Para hacer el rescate, el usuario
+indica el IMEI de su telefono, sube el archivo cifrado, el nombre original y el monto que va a pagar. Si paga menos, solo se le indica que pago
+menos (de manera de estimular que se sobrepague el rescate, de manera de maximizar nuestras ganancias). Una vez que paga, se le devuelve el
+archivo original desencriptado.
+
+El propósito del SHA1 que tomamos originalmente es para identificar al archivo. Puesto que el mismo es parte del payload que se envia al
+endpoint, y este ya esta protegido por un HMAC, lo podemos enviar asi como esta porque tenemos seguridad de que esta bien. Luego, para evitar
+requests espurias (por ejemplo, subir muchas veces un archivo que no existe) además de las protecciones usuales de tamaño de archivo (que son
+parte de la configuración del servidor de Apache que corre nuestro recuperador), usamos el SHA1 para asegurar que sea un rescate genuino.
+
+Una vez rescatado el archivo, borramos la entrada en la base de datos, para evitar ataques usando un mismo archivo repetidamente.
+
+Este es el propósito, adicionalmente, de que sea el cliente el que tenga el archivo cifrado. Ya que de esa manera podemos implementar este
+sistema de rescate.
+
+Un punto de complicación importante que tuvimos fue lograr que la aplicación en Android (escrita en Java) y el servidor (escrito en PHP) se
+entendieran desde un punto de vista criptográfico: lograr que usaran el mismo IV, la misma configuración, etc. No fue tarea fácil. Si bien
+ambos lenguajes poseen una biblioteca de funciones criptográficas de primer nivel, no todos los parámetros están debidamente documentados,
+incluso habiendo funciones (por ejemplo en PHP) que están sin documentar. También tuvimos problemas con las dependencias a nivel biblioteca,
+ya que por ejemplo PHP depende de \textit{libmcrypt} para que se puedan utilizar las funciones criptográficas que necesitabamos nosotros para
+el trabajo práctico.
+
+La programación del servidor no es muy compleja. Empleamos su propósito acotado para tratar de hacerla segura sin recurrir a complicados 
+procedimientos (por ejemplo HTTPS) pero manteniendo la misma segura. Esto sigue la política de \textit{minimo privilegio}: Buscamos que SOLO
+nuestra aplicación en Android sea la que pueda hablar con el servidor.
 
 %Mezclar ransomware con el de las 2 apps que comparten datos. Para esto habría que hacer una app nueva que sea la que por ejemplo, se conecta a internet
 %
