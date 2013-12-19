@@ -1,0 +1,77 @@
+\section{La Llama que LlamApp} % (fold)
+
+La primer parte del TP requiere implementar un \emph{malware} para \texttt{Android} que, al instalarse, envíe las fotos del teléfono a las que tenga acceso a un servidor controlado por nosotros. Para esto, es necesario tomar una serie de decisiones, que se detallan a continuación:
+
+\subsection{Façade} % (fold)
+\label{sub:fa_ade}
+Si bien no tenemos datos certeros de esto, creemos que es extremadamente poco probable que el usario promedio de \texttt{Android} instale voluntariamente una aplicación que se publicite a si mismo como ``TeRoboLasFotosApp''. Es por esto que consideramos necesario \textbf{disfrazar} el app, de tal forma que la probabilidad de una instalación se incremente ligeramente. 
+
+Aprovechando esta necesidad de disfrazar el app, nos propusimos cumplir uno de nuestros sueños y realizar la façade de este app siguiendo el diseño general de un \textit{soundboard}. Este tipo de aplicaciones tienen como objetivo el de presentar al usuario con una serie de botones, cada uno de los cuales emite un sonido al ser presionado. En general, estas aplicaciones ofrecen la funcionalidad de setear estos sonidos como ringtones de mensajes o llamadas.
+
+En nuestro caso decidimos instanciar el modelo de soundboard en el viejo y querido \textbf{La Llama Que Llama} en su nueva versión: La Llama que \textbf{no} Llama.
+
+\subsection{Information Upload} % (fold)
+\label{sub:Information Upload}
+Otra decisión que se tuvo que tomar a la hora de implementar el robo de imágenes era la concerniente a la forma de transmisión de esas imágenes al servidor controlado por nosotros. 
+
+Consideramos las siguientes opciones:
+\begin{itemize}
+	\item Email
+	\item \texttt{POST}
+	\item \texttt{scp}
+\end{itemize}
+
+
+Principalmente por facilidad en su implementación, así como compatibilidad con la mayor parte de celular posibles\footnote{\texttt{scp} sería mucho más fácil de implementar, pero sólo funcionaría con teléfonos \texttt{Android} que tengan \texttt{BusyBox} instalado, lo que limita mucho el alcance posible del ataque.}, elegimos el método \texttt{POST}.
+
+La implementación es batante sencilla, utilizando solamente una petición HTTP multipart para enviar los archivos. Esto se ve complicado por la falta de soporte nativo en Android, para lo cual utilizamos las librerías de ``Apache''. El upload por el momento solo incluye el DCIM en la tarjeta SD, que es donde se almacenan por \textit{default} las fotos de la cámara del celular. Para evitar subir archivos innecesariametne, utilizamos un \textit{digest} de SHA-1 del contenido de la imágen que enviamos al servidor antes de enviar la imágen, de manera de poder así saber si una foto fue enviada ya o no. Esto evita subidas innecesarias y acelera la aplicación. También, en el momento actual, la aplicación lanza un \textit{thread} separado por cada foto. Estamos investigando alternativas a esto que permitan disminuir el tiempo esperado de respuesta de manera de que la aplicación realice su tarea de la manera menos sospechosa posible.
+
+\subsection{Servidor} % (fold)
+\label{sub:Servidor}
+Del lado del servidor se implementó un script de PHP que se ocupa de recibir los \texttt{POST}, validarlos y almacenar la imagen.
+
+\subsubsection{Validación} % (fold)
+En primer lugar, dado que el servicio de PHP está ubicado en un servidor de acceso público es imprescindible realizar algún tipo de validación de que las solicitudes de \texttt{POST} que llegan sean efectivamente enviadas por la aplicación y no por un tercero. Es por esto que se incluyó en el código de la aplicación una clave secreta con la que se hashea el la imagen. Este hash es replicado oportunamente por el servidor y, en caso de no coincidir, el \texttt{POST} es descartado.
+\label{subsub:Validación}
+
+% subsubsection Validación (end} 
+
+\subsection{Envío Diferencial} % (fold)
+\label{ssub:Envío Diferencial}
+Uno de los principales problemas que tuvimos al testear la aplicación era que, en un principio, se subían todas las fotos todo el tiempo. Si bien esto no es un problema del lado del servidor (simplemente se pisaban los archivos, no se generaban duplicados), genera mucho tráfico de red inútilmente. Es por esto que decidimos utilizar un sistema de envío diferencial de imágenes. 
+
+Consideramos dos métodos para realizar esto:
+\begin{itemize}
+	\item Que la aplicación almacene en el mismo teléfono la lista de las imágenes ya subidas (por ejemplo, aprovechando los servicios de SQLite).
+	\item Que la aplicación consulte con el servidor qué imágenes debe mandar. 
+\end{itemize}
+% subsubsection Envío Diferencial (end)
+
+Tanto por simplicidad de implementación como para evitar dejar rastros en el teléfono, decidimos implementar la segunda. Además, tiene la ventaja de que si el usuario desistanala la aplicación (o elimina sus datos locales desde el menú de Androdid) no vuelven a enviarse todas las fotos. 
+
+Como desventaja de esto, se puede mencionar que el teléfono debe realizar más transimisones por la red (aunque muy pequeñas), que podrían ser detectadas por un \emph{sniffer}.
+
+
+La implementación actual de esta característica está hecha de la siguiente manera: para cada foto a la que tiene acceso, la aplicación envía un \texttt{POST} al servidor con el hash \textbf{SHA1} de la imagen en cuestión. Cuando el servidor lo recibe, verifica si alguna de las imágenes que tiene guardadad tiene ese mismo \textbf{SHA1}. En el caso de no encontrarla, el servidor responde al \texttt{POST} con el mensaje ``OK'', tras lo cual la aplicación envía la imágen mediante otro \texttt{POST}.
+En caso contrario, la respuesta es ``FOUND'' (y, obviamente, la aplicación no envía la imagen).
+
+\subsection{Mejoras} % (fold)
+\label{ssub:Mejoras}
+\begin{itemize}
+	\item Hacer un solo request para las fotos en vez de muchos.
+	\item Almacenamiento ordenado por IMEI.
+	\item Encriptar las fotos que van por la red (no queremos darle 100 años de perdón a nadie).
+	\item Poder setear sonido como ringtone.
+\end{itemize}
+
+
+\subsubsection{Almacenamiento Ordenado} % (fold)
+\label{ssub:almacenamiento_ordenado}
+
+Otro de los problemas que tuvimos a la hora de utilizar la aplicación surgió a la hora de subir fotos de distintos teléfonos. Este problema se presentó en dos formas:
+\begin{itemize}
+	\item Cuando se subía una imagen de un celular y ya había otra con otro nombre: por defecto, las fotos sacadas con un sólo teléfono no se almacenan con el mismo nombre. Sin embargo, si puede ocurrir (y nos pasó) que dos fotos sacads con distintos teléfonos se llamen igual. Cuando se subieron al servidor, la segunda pisó a la primera.
+	\item Cuando se subía mucha cantidad de imágenes de muchos teléfonos, se volvió un desorden importante la carpeta del servidor donde se almacenaban las imágenes.
+\end{itemize}
+
+Si bien el primer problema se puede resolver simplemente renombrando un archivo si hay una colisión, la solución al segundo problema también solucionaba el primero: se pensó en añadir a cada mensaje enviado por la aplicación un identificador del teléfono (\texttt{IMEI}). Cuando el servidor recibe una imagen, la almacena en la carpeta correspondiente a ese teléfono. De esta forma queda asociada cada imagen al teléfono del que fue subido (suponiendo que el \texttt{IMEI} que reporta el sistema operativo a la aplicación es válido) y el servidor queda más ordenado.
