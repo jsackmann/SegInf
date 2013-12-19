@@ -1,0 +1,92 @@
+\newpage
+\section{SuperSafeApp}
+
+Para la segunda parte del Trabajo Práctico desarrollamos la aplicación \emph{SuperSafeApp} que funciona como un Remote Access Tool (RAT), con el objetivo de lograr lo pedido en el enunciado:
+
+\begin{itemize}
+\item Obtener contactos (y toda su información)
+\item Obtener el registro de llamadas
+\item Obtener el registro de llamadas
+\item Obtener los mensajes
+\item Ubicación del GPS/RED
+\item Tomar una foto con la cámara
+\item Capturar el audio con el micrófono
+\item Enviar mensajes de texto
+\item Abrir una URL en el browser
+\item Hacer que el teléfono vibre.
+\item Descargar un binario dinámicamente y ejecutarlo.
+\end{itemize}
+
+Por otra parte, implementamos una nueva aplicación firmada con el mismo par de claves que la utilizada por la aplicación que implementa el RAT, para que puedan comunicarse, y sumar sus capacidades, realizando tareas maliciosas.
+
+Además, SuperSafeApp incluye funcionalidad para actuar como ransomware.
+
+
+Parar realizar el RAT, el enunciado sugiere ver como ejemplo el código del androrat. Así que buscamos el código en github, pero al verlo rapidamente observamos que tenía cierta complejidad tratar de entender que se estaba haciendo, y decidimos implementar las funcionalidades nosotros mismos, investigando el uso de la funciones provistas por Android parra realizar ciertas acciones como enviar un mensaje desde una aplicación y usando los conocimientos adquiridos durante la materia, lograr la implementación del RAT.
+
+
+\subsection{Remote Access Tool (RAT)}
+
+A continuación describimos la estructura general de la implementación y funcionamiento.
+
+La idea de un Remote Access Tool es que mediante algún \emph{evento externo} (remoto), la aplicacion pueda escuchar este evento y saber responder al evento, realizando la acción que se requirió remotamente. 
+En este caso, decidimos hacer que al enviarle un mensaje de texto a un dispositivo que contenga esta aplicación, con nombre del comando a ejecutar en el cuerpo del mensaje, la aplicación se encarga de leer ese mensaje cuando llega, interpretar cual es el comando a ejecutar, y ejecutarlo efectivamente.
+
+Para poder lograr esto, se definió una interfaz {\tt Commandable} que declara cada uno de los métodos que implementa cada una de las funcionalidades del RAT, llamemos a cada una de estas funcionalidades, \emph{comando}. En este caso, el {\tt MainActivity} implementa esta interfaz, es decir, que en el MainActivity están todos los métodos que implementan las funcionalidades del RAT.
+
+También hay una interfaz {\tt Command}, que tiene un método {\tt execute}, y hay una clase para cada comando, que implementa esta interfaz. 
+La idea es que execute se encargue precisamente de ejecutar el comando deseado llamando al método correspondiente dentro del MainActivity.
+
+Por otra parte hay una clase llamada {\tt Command Parser}. Esta clase es la encargada de hacer que se ejecute el comando correcto a partir de una determinada acción, más adelante hablamos de esta acción. Para poder lograr esto, tiene definido el conjunto de comandos aceptados. Estos son:
+\begin{itemize}
+\item {\tt VIBRATE}
+\item {\tt CONTACTS}
+\item {\tt PHOTO}
+\item {\tt RANSOM}
+\item {\tt SENDSMS}
+\item {\tt CALLLOG}
+\item {\tt LOCATION}
+\end{itemize}
+
+Y además implementa el método {\tt dispatch} que dado un string que representa a un comando, según este string, crea una instancia de la clase del comando deseado. En caso de que el string recibido no se corresponda con ningún comando conocido se crea un {\tt UnknownCommand}.
+
+Hasta acá tenemos el funcionamiento de la aplicación una vez recibido y parseado un mensaje de texto que contiene algún comando.
+Veamos ahora como hace la aplicación para saber de la llegada de un mensaje de texto y parsearlo.
+
+
+\subsubsection{Obtener contactos}
+\subsubsection{Obtener el registro de llamadas}
+\subsubsection{Obtener los mensajes}
+
+\subsubsection{Ubicación del GPS/RED}
+%Cuando le llega un mensaje al teléfono la app debe escuchar eso (lo hace SMSReceiver). Obtener la ubicación actual del usuario y enviársela al servidor a través de un post.
+%
+%SMSReceiver funciona como un publish subscribe. 
+%Crear una clase para obtener la ubicación, tipo LoactionManager, que se suscriba al SMSReceiver, y que implemente los métodos necesarios para ser notificado de la llegada de un mensaje.
+%Entonces, cuando llegue un mensaje, la clase locationManager se va enterar y lo que debe hacer es obtener la ubicación, del usuario guardarla, dejar de actualizar la ubicación, y enviar los datos conseguidos al server a través de un post.
+%
+%Mi locationmanager debe implementar Command. Esto implica que debe implementar el método execute. A la vez debe tener como variable privada un commandable.
+%commendable tiene definidos los métodos a usar. Entonces debería agregar en commandable algo como getUserLocation. Y execute llamará a este método, que estará definido en MainActivity.
+%
+%En el post enviar en un json:
+%-número de imei
+%-location
+    
+
+\subsubsection{Tomar una foto con la cámara}
+\subsubsection{Capturar el audio con el micrófono}
+\subsubsection{Enviar mensajes de texto}
+\subsubsection{Abrir una URL en el browser}
+\subsubsection{Hacer que el teléfono vibre}
+\subsubsection{Descargar un binario}
+
+
+
+\subsection{Ransomware}
+
+%Mezclar ransomware con el de las 2 apps que comparten datos. Para esto habría que hacer una app nueva que sea la que por ejemplo, se conecta a internet
+%
+%Para hacer la mezcla la idea es que las 2 apps estén firmadas con la misma key. De esta forma pueden las 2 apps pueden intercambiar mensajes entre sí, entonces una hace una cosa y le envía esa información a la otra, y la otra lo manda "por internet".
+
+
+

@@ -1,0 +1,117 @@
+%BEGIN COPYPASTE EL INFORME DEL INFO
+\documentclass[10pt, a4paper,english,spanish]{article}
+\usepackage{subfig}
+
+\parindent=20pt
+\parskip=8pt
+\usepackage[width=15.5cm, left=3cm, top=2.5cm, height= 24.5cm]{geometry}
+
+% \usepackage{ccfonts,eulervm} 
+% \usepackage[T1]{fontenc}
+%esto es para usar letra arial
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage{longtable}
+\usepackage{ccfonts,eulervm} 
+\usepackage[T1]{fontenc}
+% \usepackage{ccfonts,eulervm} 
+% \usepackage[T1]{fontenc}
+\usepackage{longtable}
+\usepackage{epigraph}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[activeacute, spanish,english]{babel}
+\usepackage{cancel}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm}
+%\usepackage{algpseudocode}
+\usepackage{afterpage}
+\usepackage{caratula}
+\usepackage{url}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{ulem}
+\usepackage{dashrule}
+\usepackage{pdflscape}
+\usepackage{pgf}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata}
+
+
+\floatname{algorithm}{Algoritmo}
+
+\newtheorem{theorem}{Teorema}[section]
+\newtheorem{lemma}[theorem]{Lema}
+\newtheorem{proposition}[theorem]{Proposici\'on}
+\newtheorem{corollary}[theorem]{Corolario}
+
+\newcommand{\Var}{\textbf{var }}
+\newcommand{\True}{\textbf{true }}
+\newcommand{\False}{\textbf{false }}
+\newcommand{\Break}{\textbf{break }}
+\newcommand{\Continue}{\textbf{continue }}
+\newcommand{\Param}{\textbf{param }}
+\newcommand{\ig}[3]{
+	\begin{landscape}
+		\begin{figure}[c]
+			\label{diag_diseno}
+			\includegraphics[scale=#2]{images/#1.pdf}
+			\caption{#3}
+		\end{figure} 
+	\end{landscape}
+	\newpage
+}
+
+
+
+
+% \parindent 0em
+%\algrenewcommand{\algorithmiccomment}[1]{//\textit{#1} }
+
+\renewcommand{\emph}[1]{\textit{#1}}
+\pagestyle{fancy}
+\thispagestyle{fancy}
+\addtolength{\headheight}{1pt}
+\lhead{Seguridad - TP1}
+\rhead{La barra de Platense}
+\cfoot{\thepage}
+\renewcommand{\footrulewidth}{0.4pt}
+\newcommand{\hblacksquare}{\hfill \blacksquare}
+%FIN COPYPASTE EL INFORME DEL INFO
+\begin{document}
+
+\materia{Seguridad de la Información}
+\submateria{Segundo Cuatrim\'estre de 2013}
+\titulo{Trabajo Pr\'actico: Malito}
+\subtitulo{Desarrollo de malware para android}
+\grupo{Grupo ``La barra de Platense''}
+\integrante{Juli\'an Sackmann}{540/09}{jsackmann@gmail.com}
+\integrante{Juan Pablo Darago}{272/10}{jpdarago@gmail.com}
+\integrante{Vanesa Stricker}{159/09}{vanesastricker@gmail.com}
+
+
+\maketitle
+\pagebreak
+
+\tableofcontents
+\pagebreak
+
+\input{lallamaquellamapp}
+
+\input{supersafeapp}
+
+
+% \addcontentsline{toc}{section}{Referencias}
+% \begin{thebibliography}{8}
+% \raggedright
+
+% \bibitem{AndroidMalware}
+% 	El librito ese.
+% 	\newblock {Re loco}.
+% 	\newblock De colores.
+
+% \end{thebibliography}
+
+\end{document}
