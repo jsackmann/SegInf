@@ -30,7 +30,7 @@ Principalmente por facilidad en su implementación, así como compatibilidad con
 La implementación es batante sencilla, utilizando solamente una petición HTTP \textit{multipart} para enviar los archivos. Esta extensión a HTTP permite enviar por MIME archivos binarios. Esto se ve complicado por la falta de soporte nativo en Android, para lo cual utilizamos las librerías de ``Apache''. El upload por el momento solo incluye el DCIM en la tarjeta SD, que es donde se almacenan por \textit{default} las fotos de la cámara del celular. Para evitar subir archivos innecesariametne, utilizamos un \textit{digest} de SHA-1 del contenido de la imágen que enviamos al servidor antes de enviar la imágen, de manera de poder así saber si una foto fue enviada ya o no. Esto evita subidas innecesarias y acelera la aplicación. También, en el momento actual, la aplicación lanza una \textit{tarea} separada por cada foto. Estas tareas son disparadas por detras mediante un \textit{thread} aparte del \textit{thread} principal.
 
 Una vez considerado como subir las imagenes, como hacemos para subirlas? Para ello utilizamos un algoritmo de 
-BFS (\textit{Breadth-First Search}) para recorrer el arbol de directorios empezando en DCIM, el directorio raíz
+DFS (\textit{Depth-First Search}) para recorrer el arbol de directorios empezando en DCIM, el directorio raíz
 dentro de la tarjeta SD donde están las fotos que almacena la camara.Para cada foto entonces encontrada levantamos una tarea que la envía.
 
 \subsection{Servidor} % (fold)
