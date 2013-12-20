@@ -189,7 +189,7 @@ el archivo original usando una clave aleatoria, y se deshace del original. De es
 cifrado como rehén. Posteriormente envia la clave utilizada al servidor, junto con demas datos de identificación, y un SHA1 del archivo
 en cuestion.
 
-De acuerdo a la documentación de Android, cualquier Intent que utilize este tipo de MIME sera recibida por el \textit{Ransomwarer} por lo cual
+De acuerdo a la documentaci\'on de Android, cualquier Intent que utilize este tipo de MIME sera recibida por el \textit{Ransomwarer} por lo cual
 no hay necesidad de cifrar con la misma clave ambas aplicaciones: El usuario ya accedió a tener un servicio corriendo que responde al tipo de
 MIME especial que nosotros utilizamos por lo tanto ya podemos comunicar ambas aplicaciones que tenemos de manera sencilla.
 
@@ -238,9 +238,45 @@ También, al desencriptar solamente los archivos que suben los usuarios, tenemos
 de espacio (lo cual tendríamos si tuvieramos que almacenar todos los archivos en la base de
 datos).
 
-%Mezclar ransomware con el de las 2 apps que comparten datos. Para esto habría que hacer una app nueva que sea la que por ejemplo, se conecta a internet
-%
-%Para hacer la mezcla la idea es que las 2 apps estén firmadas con la misma key. De esta forma pueden las 2 apps pueden intercambiar mensajes entre sí, entonces una hace una cosa y le envía esa información a la otra, y la otra lo manda "por internet".
+\subsection{Problemas que nos encontramos}
+
+Para el desarrollo de esta aplicación tuvimos principalmente dos
+problemas.
+
+En primer lugar, tuvimos el problema de los permisos de Android. La 
+documentaci\'on es buena en ese sentido (es fácil saber que permisos requiere
+una cierta acción) pero tuvimos el problema de que si no le dabamos a la
+aplicación los permisos suficientes, la misma fallaba sin dar aviso (es 
+decir, no indicaba que política de seguridad se había violado). Esto
+complicó innecesariamente esta aplicación, ya que la misma requiere de 
+muchos permisos por la cantidad de comandos que puede aceptar.
+
+Otro problema que tuvimos fue que, para no reinventar la rueda, utilizamos
+todo lo posible las funciones de criptografía de PHP y Java para los
+algoritmos que necesitabamos. Implementativamente fue complicado lograr
+que se entendieran bien el servidor en PHP y el programa en Java dado que
+interpretan de distinta manera los distintos comandos y porque además los
+dos lenguajes son muy distintos. Por ejemplo, para poder utilizar el vector
+de inicialización del algoritmo AES en Java, podíamos usar un simple
+arreglo de bytes para indicarlo. Sin embargo en PHP esto no es posible
+puesto que en php los arreglos de enteros son de 32 bits por default. Para
+ello fue necesario consultar la documentaci\'on y encontrar una función,
+en nuestro caso \texttt{pack}, que nos permitiera dado el arreglo de enteros
+de 32 bits reconstruir el arreglo de bytes.
+
+Otro ejemplo es como interpretan la cantidad de bytes de la clave AES en
+Java y en PHP. Dadas las restricciones sobre criptografía, AES en Java
+esta limitado (a menos que se descarguen extensiones) a 16 bytes en la clave. 
+Esto hace que el cifrado pierda mucha fuerza. Descargando las extensiones
+correctas se arreglo este problema.
+
+En PHP mediante la librería \texttt{libmcrypt}, los algoritmos se identifican
+por una clave. Sorprendentemente encontramos que no existía el algoritmo AES
+en PHP. Lo que ocurre es que el algoritmo se lo identifica por su nombre original
+Rijndael. Además, Rijndael 128 en PHP es el nombre para AES 256. Esto nos
+complicó la implementación puesto que entonces los archivos encriptados por
+Java no eran entendidos por PHP correctamente, y sin dar ningun indicio o pista
+de donde podía llegar a estar el problema.
 
 \subsection{Mejoras}
 
