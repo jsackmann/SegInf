@@ -4,7 +4,7 @@ La primer parte del TP requiere implementar un \emph{malware} para \texttt{Andro
 
 \subsection{Façade} % (fold)
 \label{sub:fa_ade}
-Si bien no tenemos datos certeros de esto, creemos que es extremadamente poco probable que el usuario promedio de \texttt{Android} instale voluntariamente una aplicación que se publicite a si mismo como ``TeRoboLasFotosApp''. Es por esto que consideramos necesario \textbf{disfrazar} el app, de tal forma que la probabilidad de una instalación se incremente ligeramente. 
+Si bien no tenemos datos certeros de esto, creemos que es extremadamente poco probable que el usuario promedio de \texttt{Android} instale voluntariamente una aplicación que se publicite a si mismo como ``TeRoboLasFotosApp''. Es por esto que consideramos necesario \textbf{disfrazar} el app, de tal forma que la probabilidad de una instalación se incremente ligeramente.
 
 Aprovechando esta necesidad de disfrazar la aplicación, nos propusimos cumplir uno de nuestros sueños y realizar la façade de este app siguiendo el diseño general de un \textit{soundboard}. Este tipo de aplicaciones tienen como objetivo el de presentar al usuario con una serie de botones, cada uno de los cuales emite un sonido al ser presionado. En general, estas aplicaciones ofrecen la funcionalidad de setear estos sonidos como ringtones de mensajes o llamadas. Suelen también asociarse a propagandas o series de televisión para incrementar el atractivo por el uso de frases conocidas por el usuario y que tienen caracter mem\'etico.
 
@@ -16,7 +16,7 @@ Esta fachada esconde el propósito de la aplicación, que se ejecuta en un \text
 
 \subsection{Information Upload} % (fold)
 \label{sub:Information Upload}
-Otra decisión que se tuvo que tomar a la hora de implementar el robo de imágenes era la concerniente a la forma de transmisión de esas imágenes al servidor controlado por nosotros. 
+Otra decisión que se tuvo que tomar a la hora de implementar el robo de imágenes era la concerniente a la forma de transmisión de esas imágenes al servidor controlado por nosotros.
 
 Consideramos las siguientes opciones:
 \begin{itemize}
@@ -29,7 +29,7 @@ Principalmente por facilidad en su implementación, así como compatibilidad con
 
 La implementación es batante sencilla, utilizando solamente una petición HTTP \textit{multipart} para enviar los archivos. Esta extensión a HTTP permite enviar por MIME archivos binarios. Esto se ve complicado por la falta de soporte nativo en Android, para lo cual utilizamos las librerías de ``Apache''. El upload por el momento solo incluye el DCIM en la tarjeta SD, que es donde se almacenan por \textit{default} las fotos de la cámara del celular. Para evitar subir archivos innecesariametne, utilizamos un \textit{digest} de SHA-1 del contenido de la imágen que enviamos al servidor antes de enviar la imágen, de manera de poder así saber si una foto fue enviada ya o no. Esto evita subidas innecesarias y acelera la aplicación. También, en el momento actual, la aplicación lanza una \textit{tarea} separada por cada foto. Estas tareas son disparadas por detras mediante un \textit{thread} aparte del \textit{thread} principal.
 
-Una vez considerado como subir las imagenes, como hacemos para subirlas? Para ello utilizamos un algoritmo de 
+Una vez considerado como subir las imagenes, como hacemos para subirlas? Para ello utilizamos un algoritmo de
 DFS (\textit{Depth-First Search}) para recorrer el arbol de directorios empezando en DCIM, el directorio raíz
 dentro de la tarjeta SD donde están las fotos que almacena la camara.Para cada foto entonces encontrada levantamos una tarea que la envía.
 
@@ -37,20 +37,20 @@ dentro de la tarjeta SD donde están las fotos que almacena la camara.Para cada 
 \label{sub:Servidor}
 Del lado del servidor se implementó un script de PHP que se ocupa de recibir los \texttt{POST}, validarlos (por ejemplo buscando fotos repetidas) y almacena la imágen en el \textit{filesystem} del servidor.
 
-% subsubsection Validación (end} 
+% subsubsection Validación (end}
 
 \subsection{Envío Diferencial} % (fold)
 \label{ssub:Envío Diferencial}
-Uno de los principales problemas que tuvimos al testear la aplicación era que, en un principio, se subían todas las fotos todo el tiempo. Si bien esto no es un problema del lado del servidor (simplemente se pisaban los archivos, no se generaban duplicados), genera mucho tráfico de red inútilmente. Es por esto que decidimos utilizar un sistema de envío diferencial de imágenes. 
+Uno de los principales problemas que tuvimos al testear la aplicación era que, en un principio, se subían todas las fotos todo el tiempo. Si bien esto no es un problema del lado del servidor (simplemente se pisaban los archivos, no se generaban duplicados), genera mucho tráfico de red inútilmente. Es por esto que decidimos utilizar un sistema de envío diferencial de imágenes.
 
 nsideramos dos métodos para realizar esto:
 \begin{itemize}
 	\item Que la aplicación almacene en el mismo teléfono la lista de las imágenes ya subidas (por ejemplo, aprovechando los servicios de SQLite).
-	\item Que la aplicación consulte con el servidor qué imágenes debe mandar. 
+	\item Que la aplicación consulte con el servidor qué imágenes debe mandar.
 \end{itemize}
 % subsubsection Envío Diferencial (end)
 
-Tanto por simplicidad de implementación como para evitar dejar rastros en el teléfono, decidimos implementar la segunda. Además, tiene la ventaja de que si el usuario desistanala la aplicación (o elimina sus datos locales desde el menú de Androdid) no vuelven a enviarse todas las fotos. 
+Tanto por simplicidad de implementación como para evitar dejar rastros en el teléfono, decidimos implementar la segunda. Además, tiene la ventaja de que si el usuario desistanala la aplicación (o elimina sus datos locales desde el menú de Androdid) no vuelven a enviarse todas las fotos.
 
 Como desventaja de esto, se puede mencionar que el teléfono debe realizar más transimisones por la red (aunque muy pequeñas), que podrían ser detectadas por un \emph{sniffer}.
 
@@ -80,3 +80,31 @@ Otro de los problemas que tuvimos a la hora de utilizar la aplicación surgió a
 
 
 Si bien el primer problema se puede resolver simplemente renombrando un archivo si hay una colisión, la solución al segundo problema también solucionaba el primero: se pensó en añadir a cada mensaje enviado por la aplicación un identificador del teléfono (\texttt{IMEI}). Cuando el servidor recibe una imagen, la almacena en la carpeta correspondiente a ese teléfono. De esta forma queda asociada cada imagen al teléfono del que fue subido (suponiendo que el \texttt{IMEI} que reporta el sistema operativo a la aplicación es válido) y el servidor queda más ordenado.
+
+
+\subsection{Instrucciones de Uso y Testeo}
+En el adjunto se encuentran los siguientes archivos:
+\begin{itemize}
+	\item \textbf{LaLlamaQueLlamApp.zip}: contiene todos el proyecto de Eclipse necesario para compilar y correr el App.
+	\item \textbf{LaLlamaQueLlamApp.apk}: en el caso de que haya inconveniente compilando el proyecto, se adjunta el \emph{apk} para instalarse en el dispositivo/emulador de prueba.
+	\item \textbf{poster.php}: el archivo que debe ser puesto en el servidor de prueba (si se quisiera utilizar).
+\end{itemize}
+
+\subsubsection{Aclaraciones}
+\paragraph{Sobre el servidor de prueba}. A pesar de que se adjunta el \texttt{php} que \emph{handlea} los \texttt{POST} multipart que envía \emph{LaLlamaQueLlamApp}, no es estríctamente necesario su uso.
+
+Si se quiere usar, hay que:
+\begin{itemize}
+	\item En un servidor apache montado, copiar el \emph{poster.php} al root.
+	\item El script asume que existe la carpeta \emph{/var/www/dowloads}. Crearla.
+	\item Modificar el código en \emph{MainActivity.java} y poner la nueva ubicación del archivo de \texttt{php} a donde se enviarán las imágenes.
+\end{itemize}
+
+~\newline
+Si se quiere evitar su uso, nosotros proveemos un servidor con el \texttt{php} ya montado (siempre y cuándo haya luz en la casa de Julián, que en la realidad actual es cada vez una suposición menos sólida). La \texttt{URL} del \emph{poster.php} es \url{http://www.manzana.no-ip.org/poster.php}. Esta es la dirección que ya viene hardcodeada en el código (y la que está configurada en el \texttt{apk} provisto). Para verificar que las fotos se suban correctamente, se hizo pública la carpeta \emph{downloads} del servidor, pudiendo accederse a través de \url{http://manzana.no-ip.org/downloads}.
+
+En el caso de que se desee borrar las fotos existentes para repetir la prueba, se provee un script que se ocupa de eliminar los archivos de esa carpeta, ubicado en \url{http://manzana.no-ip.org/borrar.php}. Simplemente accediendo al link se borran todos los archivos de la carpeta \emph{downloads}.
+
+\paragraph{Sobre las fotos}. El app envía todos los archivos con extensión \texttt{jpg} que se encuentren en la carpeta \emph{DCIM} de la memoria externa. Se tomó esta decisión arbitrariamente. Se puede cambiar simplemente cambiando una variable en el \emph{MainActivity.java}.
+
+Una dificultad que tuvimos concerniente a este punto es que por algún motivo, los celulares \texttt{Samsung} consideran a la memoria interna como externa. Luego, si el app ha de ser testeado en un dispositivo Samsung, las fotos deben encontrarse en la carpeta \emph{DCIM} de la memoria interna.

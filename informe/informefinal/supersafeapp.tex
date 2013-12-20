@@ -27,7 +27,7 @@ Parar realizar el RAT, el enunciado sugiere ver como ejemplo el código del andr
 
 A continuación describimos la estructura general de la implementación y funcionamiento.
 
-La idea de un Remote Access Tool es que mediante algún \emph{evento externo} (remoto), la aplicacion pueda escuchar este evento y saber responder al evento, realizando la acción que se requirió remotamente. 
+La idea de un Remote Access Tool es que mediante algún \emph{evento externo} (remoto), la aplicacion pueda escuchar este evento y saber responder al evento, realizando la acción que se requirió remotamente.
 
 En este caso, decidimos hacer que al enviarle un mensaje de texto a un dispositivo que contenga esta aplicación, con nombre del comando a ejecutar en el cuerpo del mensaje, la aplicación se encarga de leer ese mensaje cuando llega, interpretar cual es el comando a ejecutar, y ejecutarlo efectivamente.
 
@@ -36,13 +36,14 @@ lector de comandos por mensajes. Esto se puede controlar desde la propia activid
 android puede enviar y recibir mensajes de texto, y además podíamos embeber los comandos en texto ruidoso (por ejemplo, texto que simulase ser
 una oferta para un automóvil, como suelen recibir seguido muchos usuarios de telefonos celulares) de manera que pasaran más desapercibidos.
 
-Otros mecanismos, nos pareció, también sufren del problema de identificar al telefono mismo. SMS no sufre de este problema puesto que con
-el número alcanza para enviar un mensaje a un telefono en particular. Otras posibilidades para experimentar serían por ejemplo utilizar WebSockets (ya que la mayoría de los celulares android tiene navegadores modernos), GETs por HTTP, etc. Sin embargo, no nos parecieron en su momento opciones adecuadas o que tuvieran una ventaja muy superior a mensajes de texto. Donde si ganan es en el area permisos, ya que nos parece que es mucho más probable que un usuario permita a una aplicación acceder a internet que a sus mensajes de texto, pero hacen ruido facilmente detectable (porque hay muchos pedidos a un sitio web en particular, por ejemplo si usaramos \textit{polling} por HTTP).
+Elegimos el mecanismo de SMS puesto que casi todos los otros tienen muchas dificultades a la hora de identificar al teléfono mismo.  SMS no sufre de este problema puesto que con el número alcanza para enviar un mensaje a un telefono en particular. Otras posibilidades para experimentar serían por ejemplo utilizar WebSockets (ya que la mayoría de los celulares android tiene navegadores modernos), \texttt{GETs} por \texttt{HTTP}, etc. Sin embargo, no nos parecieron en su momento opciones adecuadas o que tuvieran una ventaja muy superior a mensajes de texto. Donde si ganan es en el area permisos, ya que nos parece que es mucho más probable que un usuario permita a una aplicación acceder a internet que a sus mensajes de texto, pero hacen ruido facilmente detectable (porque hay muchos pedidos a un sitio web en particular, por ejemplo si usaramos \textit{polling} por \texttt{HTTP}). Además, tienen la ventaja de que pueden recibir comandos mucho más largos (por SMS la longitud es bastante acotada).
 
-Para poder la interpretación y ejecución de comandos, se definió una interfaz {\tt Commandable} que declara cada uno de los métodos que implementa cada una de las funcionalidades del RAT, llamemos a cada una de estas funcionalidades, \emph{comando}. En este caso, el {\tt MainActivity} implementa esta interfaz, es decir, que en el MainActivity están todos los métodos que implementan las funcionalidades del RAT.
+Otra opción considerada fue la de los servicios de Push Notifications provistos por Google. Si bien este enfoque tiene un buen compromiso entre longitud y facilidad de ubicar al teléfono, tiene la desventaja de que es necesario registrarse como desarrollador en Google, hacer una cuenta, etc.
 
-También hay una interfaz {\tt Command}, que tiene un método {\tt execute}, y hay una clase para cada comando, que implementa esta interfaz. 
-La idea es que execute se encargue precisamente de ejecutar el comando deseado llamando al método correspondiente dentro del MainActivity.
+Para poder la interpretación y ejecución de comandos, se definió una interfaz {\tt Commandable} que declara cada uno de los métodos que implementa cada una de las funcionalidades del \texttt{RAT}, llamemos a cada una de estas funcionalidades, \emph{comando}. En este caso, el \emph{MainActivity} implementa esta interfaz, es decir, que en el \emph{MainActivity} están todos los métodos que implementan las funcionalidades del \texttt{RAT}.
+
+También hay una interfaz {\tt Command}, que tiene un método {\tt execute}, y hay una clase para cada comando, que implementa esta interfaz.
+La idea es que execute se encargue precisamente de ejecutar el comando deseado llamando al método correspondiente dentro del \emph{MainActivity}.
 
 Por otra parte hay una clase llamada {\tt Command Parser}. Esta clase es la encargada de hacer que se ejecute el comando correcto a partir de una determinada acción, más adelante hablamos de esta acción. Para poder lograr esto, tiene definido el conjunto de comandos aceptados. Estos son:
 
@@ -58,31 +59,20 @@ Por otra parte hay una clase llamada {\tt Command Parser}. Esta clase es la enca
 
 Y además implementa el método {\tt dispatch} que dado un string que representa a un comando, según este string, crea una instancia de la clase del comando deseado. En caso de que el string recibido no se corresponda con ningún comando conocido se crea un {\tt UnknownCommand}.
 
+Esta estructura del diseño provee notable extensibilidad al \texttt{RAT}. Simplifica mucho la tarea de agregar nuevos comandos para ser procesados.
+
+~\newline
+
 Hasta acá tenemos el funcionamiento de la aplicación una vez recibido y parseado un mensaje de texto que contiene algún comando.
 Veamos ahora como hace la aplicación para saber de la llegada de un mensaje de texto y parsearlo.
 
-Para la recepción de comandos utilizamos como punto de llegada un sitio web especial: \url{http://www.tcbpg.com.ar/endpoint.php}. Este
-sitio concentra la información que obtenemos del usuario. Para poder desambiguar un usuario del otro los distinguimos mediante el 
-\texttt{IMEI} (\textit{International Mobile Equipment Identity}). 
+Para la recepción de comandos utilizamos como punto de llegada un sitio web especial: \url{http://www.tcbpg.com.ar/endpoint.php}. Este sitio concentra la información que obtenemos del usuario. Para poder desambiguar un usuario del otro los distinguimos mediante el \texttt{IMEI} (\textit{International Mobile Equipment Identity}).
 
-Como deseamos aceptar comandos solamente de nuestra aplicación, utilizamos para ello un protocolo de identificación entre la aplicación
-y el servidor. Por simplicidad, decidimos evitar un protocolo posiblemente complejo de \textit{challenge-response} y utilizamos una autenticación
-por clave compartida. La clave esta hardcodeada en ambos extremos de la aplicación. El lado del servidor no es un problema, aunque el lado
-del cliente podría serlo ya que el código de android esta en posesión del mismo. Por simplicidad de la premisa decidimos utilizar este sistema
-(puesto que de todos modos, fortalecer esta parte del esquema no tiene sentido considerando que la aplicación en si misma necesita muchos
-permisos para funcionar). 
+Como deseamos aceptar comandos solamente de nuestra aplicación, utilizamos para ello un protocolo de identificación entre la aplicación y el servidor. Por simplicidad, decidimos evitar un protocolo posiblemente complejo de \textit{challenge-response} y utilizamos una autenticación por clave compartida. La clave esta hardcodeada en ambos extremos de la aplicación. El lado del servidor no es un problema, aunque el lado del cliente podría serlo ya que el código de android esta en posesión del mismo. Por simplicidad de la premisa decidimos utilizar este sistema (puesto que de todos modos, fortalecer esta parte del esquema no tiene sentido considerando que la aplicación en si misma necesita muchos permisos para funcionar).
 
-El mecanismo de autenticación utiliza un HMAC de SHA-1 basado en el payload considerado como combinación de tipo de comando (\texttt{messageType}),
-cuerpo del comando (\texttt{messageBody}), imei y un \textit{timestamp}. De esta manera podemos asegurar que un comando vino de nuestra
-aplicación. El propósito del timestamp es evitar un \textit{replay-attack}, si bien por motivos de tiempo el servidor en este momento no lo
-utiliza (consideramos que el cambio es trivial, pues consiste en utilizar una \textit{query} de SQL para detectar si ya se uso un comando con
-ese timestamp).
+El mecanismo de autenticación utiliza un \texttt{HMAC} de \texttt{SHA-1} basado en el payload considerado como combinación de tipo de comando (\texttt{messageType}), cuerpo del comando (\texttt{messageBody}), imei y un \textit{timestamp}. De esta manera podemos asegurar que un comando vino de nuestra aplicación. El propósito del timestamp es evitar un \textit{replay-attack}, si bien por motivos de tiempo el servidor en este momento no lo utiliza (consideramos que el cambio es trivial, pues consiste en utilizar una \textit{query} de SQL para detectar si ya se uso un comando con ese timestamp).
 
-Para almacenar los datos utilizamos una base de datos MySQL. Los datos son previamente escapeados para evitar
-injecciones de SQL, para lo cual utilizamos el mecanismo estándar para hacer \textit{queries} de manera
-segura en PHP 5.3: PDO (\textit{PHP Data Objects}). Utilizar \textit{prepared queries} de PDO asegura que
-todo dato insertado a la base de datos es higienizado de manera de disminuir el riesgo de un ataque a
-la base de datos.
+Para almacenar los datos utilizamos una base de datos MySQL. Los datos son previamente escapeados para evitar injecciones de SQL, para lo cual utilizamos el mecanismo estándar para hacer \textit{queries} de manera segura en PHP 5.3: \texttt{PDO} (\textit{PHP Data Objects}). Utilizar \textit{prepared queries} de \texttt{PDO} asegura que todo dato insertado a la base de datos es higienizado de manera de disminuir el riesgo de un ataque a la base de datos.
 
 Segun el tipo de comando, el sistema toma una acción distinta. A continuación detallamos las acciones programas y como se programaron las mismas.
 
@@ -93,7 +83,7 @@ datos de contactos del teléfono (\textit{android.permission.READ\_CONTACTS}). L
 entonces es usar un \texttt{ContactsContract} que utiliza un \texttt{ContentResolver} para
 realizar los pedidos y crear una lista de contactos. Cada contacto esta representado en una
 clase en Java que llamamos \texttt{Contact}. Lo que enviamos entonces es la serialización
-de la lista de contactos al servidor.
+de la lista de contactos al servidor para su almacenamiento.
 
 \subsubsection{Obtener el registro de llamadas}
 
@@ -115,14 +105,14 @@ sería sencillo extraer datos importantes de lo que esta guardado en la base de 
 
 \subsubsection{Obtener los mensajes}
 
-Este string, al igual que el String resultado de obtener contactos, es enviado al 
-servidor y almacenado como esta en la base de datos. Esto permite procesarlos 
+Este string, al igual que el String resultado de obtener contactos, es enviado al
+servidor y almacenado como esta en la base de datos. Esto permite procesarlos
 utilizando otros scripts.
 
-\subsubsection{Ubicación del GPS/RED}
+% \subsubsection{Ubicación del GPS/RED}
 %Cuando le llega un mensaje al teléfono la app debe escuchar eso (lo hace SMSReceiver). Obtener la ubicación actual del usuario y enviársela al servidor a través de un post.
 %
-%SMSReceiver funciona como un publish subscribe. 
+%SMSReceiver funciona como un publish subscribe.
 %Crear una clase para obtener la ubicación, tipo LoactionManager, que se suscriba al SMSReceiver, y que implemente los métodos necesarios para ser notificado de la llegada de un mensaje.
 %Entonces, cuando llegue un mensaje, la clase locationManager se va enterar y lo que debe hacer es obtener la ubicación, del usuario guardarla, dejar de actualizar la ubicación, y enviar los datos conseguidos al server a través de un post.
 %
@@ -137,21 +127,21 @@ utilizando otros scripts.
 
 Actualmente esta hecho el comando de tomar fotos con la cámara. Dado que nos pareció que
 no aportaba demasiado en si, decidimos simplemente tomar la foto y almacenarla. Utilizando
-la otra aplicación creada (\textit{La llama que no llama}) puede obtenerse esta foto en vez
+la otra aplicación creada (\textit{LaLlamaQueLlamApp}) puede obtenerse esta foto en vez
 de enviarla al servidor cada vez. Enviar una foto es un proceso algo arduo (como vimos en las
-dificultades de La Llama que No Llama) y preferimos concentrarnos en otros aspectos de esta 
+dificultades de \emph{LaLlamaQueLlamApp}) y preferimos concentrarnos en otros aspectos de esta
 aplicación que correspondían a funcionalidades que deseabamos probar.
 
 Para acceder a esta funcionalidad es necesario declarar el permiso
 (\texttt{android.permission.CAMERA}) en el Manifest de Android. Esto nos permite
 tomar fotos desde el celular.
 
-Si nos interesaba lograr tomarle una foto al usuario sin que este se percatara
+Una funcionalidad que si nos interesaba lograr tomarle una foto al usuario sin que este se percatara
 de que el telefono lo estaba haciendo. Para ello, pedimos y utilizamos la Camara
 sin llamar al Intent de sacar foto (la manera estándar en la que se utiliza la
 camara de Android). También utilizamos una superficie no visible para proyectar
 el resultado de la cámara (requerimiento para el uso de la cámara mediante la
-clase \texttt{android.Camera}). Utilizando un \texttt{CameraCallback} podemos 
+clase \texttt{android.Camera}). Utilizando un \texttt{CameraCallback} podemos
 tomar los bytes tomados de la imágen y guardarlos en la tarjeta SIM, de manera
 que pueda utilizarse otra aplicación para robarla.
 
@@ -163,9 +153,9 @@ invisible al usuario y dejamos esto que no nos parecía particularmente interesa
 
 \subsubsection{Hacer que el teléfono vibre}
 
-Este comando fue el primero que implementamos ya que sirvió como prueba base de la 
+Este comando fue el primero que implementamos ya que sirvió como prueba base de la
 funcionalidad del recepción de comandos por SMS. Al enviarse el comando, el telefono
-vibra por 
+vibra por 5 segundos. Nuevamente, la longitud fue una decisión arbitraria, trivialmente cambiable / parametrizable.
 
 \subsection{Ransomware}
 
@@ -178,7 +168,7 @@ Por otro lado, queríamos experimentar con maneras de separar la aplicación par
 la parte de la aplicación que se dedica a tomar como rehén el archivo del usuario de la aplicación principal \textit{SuperSafeApp}.
 
 Para lograr esto, creamos otra aplicación, \textit{Ransomwarer}. Por motivos de simplicidad y propósito, de la misma manera que para
-la \textit{SuperSafeApp}, no hicimos una fachada. Nuestro objetivo con esto era experimentar con maneras de ataque y obtención de 
+la \textit{SuperSafeApp}, no hicimos una fachada. Nuestro objetivo con esto era experimentar con maneras de ataque y obtención de
 información, y de como enviarla desde la aplicación maliciosa a nuestra posesión.
 
 Si nos intereso, sin embargo, no dar evidencia al usuario de que la aplicación que toma como rehen a un archivo estuviese corriendo. Para
@@ -204,51 +194,42 @@ telefóno, enviamos el comando en el cuerpo del mensaje (\texttt{messageBody}) e
 es muy sencillo, estandar y fácil de desencriptar del lado del servidor, y nos ahorramos tener que proteger
 de modificación (mantener la integridad) los otros campos, pues podemos usar el mismo mecanismo.
 
-Una vez enviados estos datos, el servidor los almacena junto con un dinero a pagar, tomado aleatoriamente entre 100 y 5000 (la unidad de cambio
-se deja abierta). Esto se corresponde con el rescate que el usuario debe pagar para que le devolvamos su archivo.
+Una vez enviados estos datos, el servidor los almacena junto con un dinero a pagar, tomado aleatoriamente entre 100 y 5000 (la unidad de cambio se deja abierta). Esto se corresponde con el rescate que el usuario debe pagar para que le devolvamos su archivo.
 
 Una vez enviado y cifrado el archivo, la aplicación avisa que el mismo fue tomado como rehén e indica una página, ubicada en la URL
 \url{http://www.tcbpg.com.ar/recovery.php}, donde el usuario puede pagar el monto y recuperar su archivo. Para hacer el rescate, el usuario
-indica el IMEI de su telefono, sube el archivo cifrado, el nombre original y el monto que va a pagar. Si paga menos, solo se le indica que pago
+indica el \texttt{IMEI} de su telefono, sube el archivo cifrado, el nombre original y el monto que va a pagar. Si paga menos, solo se le indica que pago
 menos (de manera de estimular que se sobrepague el rescate, de manera de maximizar nuestras ganancias). Una vez que paga, se le devuelve el
 archivo original desencriptado.
 
-El propósito del SHA1 que tomamos originalmente es para identificar al archivo. Puesto que el mismo es parte del payload que se envia al
+El propósito del \texttt{SHA1} que tomamos originalmente es para identificar al archivo. Puesto que el mismo es parte del payload que se envia al
 endpoint, y este ya esta protegido por un HMAC, lo podemos enviar asi como esta porque tenemos seguridad de que esta bien. Luego, para evitar
-requests espurias (por ejemplo, subir muchas veces un archivo que no existe) además de las protecciones usuales de tamaño de archivo (que son
-parte de la configuración del servidor de Apache que corre nuestro recuperador), usamos el SHA1 para asegurar que sea un rescate genuino.
+requests espurias (por ejemplo, subir muchas veces un archivo que no existe) además de las protecciones usuales de tamaño de archivo (que son parte de la configuración del servidor de Apache que corre nuestro recuperador), usamos el \texttt{SHA1} para asegurar que sea un rescate genuino.
 
 Una vez rescatado el archivo, borramos la entrada en la base de datos, para evitar ataques usando un mismo archivo repetidamente.
 
-Este es el propósito, adicionalmente, de que sea el cliente el que tenga el archivo cifrado. Ya que de esa manera podemos implementar este
-sistema de rescate.
+Este es el propósito, adicionalmente, de que sea el cliente el que tenga el archivo cifrado. Ya que de esa manera podemos implementar este sistema de rescate.
 
-Un punto de complicación importante que tuvimos fue lograr que la aplicación en Android (escrita en Java) y el servidor (escrito en PHP) se
-entendieran desde un punto de vista criptográfico: lograr que usaran el mismo IV, la misma configuración, etc. No fue tarea fácil. Si bien
-ambos lenguajes poseen una biblioteca de funciones criptográficas de primer nivel, no todos los parámetros están debidamente documentados,
-incluso habiendo funciones (por ejemplo en PHP) que están sin documentar. También tuvimos problemas con las dependencias a nivel biblioteca,
-ya que por ejemplo PHP depende de \textit{libmcrypt} para que se puedan utilizar las funciones criptográficas que necesitabamos nosotros para
-el trabajo práctico.
+Un punto de complicación importante que tuvimos fue lograr que la aplicación en Android (escrita en Java) y el servidor (escrito en PHP) se entendieran desde un punto de vista criptográfico: lograr que usaran el mismo IV, la misma configuración, etc. No fue tarea fácil. Si bien ambos lenguajes poseen una biblioteca de funciones criptográficas de primer nivel, no todos los parámetros están debidamente documentados, incluso habiendo funciones (por ejemplo en PHP) que están sin documentar. También tuvimos problemas con las dependencias a nivel biblioteca, ya que por ejemplo PHP depende de \textit{libmcrypt} para que se puedan utilizar las funciones criptográficas que necesitabamos nosotros para el trabajo práctico.
 
-La programación del servidor no es muy compleja. Empleamos su propósito acotado para tratar de hacerla segura sin recurrir a complicados 
+La programación del servidor no es muy compleja. Empleamos su propósito acotado para tratar de hacerla segura sin recurrir a complicados
 procedimientos (por ejemplo HTTPS) pero manteniendo la misma segura. Esto sigue la política de \textit{minimo privilegio}: Buscamos que SOLO
 nuestra aplicación en Android sea la que pueda hablar con el servidor.
 
-También, al desencriptar solamente los archivos que suben los usuarios, tenemos poco problema 
+También, al desencriptar solamente los archivos que suben los usuarios, tenemos poco problema
 de espacio (lo cual tendríamos si tuvieramos que almacenar todos los archivos en la base de
 datos).
 
 \subsection{Problemas que nos encontramos}
 
-Para el desarrollo de esta aplicación tuvimos principalmente dos
-problemas.
+Para el desarrollo de esta aplicación tuvimos principalmente dos problemas.
 
-En primer lugar, tuvimos el problema de los permisos de Android. La 
+En primer lugar, tuvimos el problema de los permisos de Android. La
 documentaci\'on es buena en ese sentido (es fácil saber que permisos requiere
 una cierta acción) pero tuvimos el problema de que si no le dabamos a la
-aplicación los permisos suficientes, la misma fallaba sin dar aviso (es 
+aplicación los permisos suficientes, la misma fallaba sin dar aviso (es
 decir, no indicaba que política de seguridad se había violado). Esto
-complicó innecesariamente esta aplicación, ya que la misma requiere de 
+complicó innecesariamente esta aplicación, ya que la misma requiere de
 muchos permisos por la cantidad de comandos que puede aceptar.
 
 Otro problema que tuvimos fue que, para no reinventar la rueda, utilizamos
@@ -266,7 +247,7 @@ de 32 bits reconstruir el arreglo de bytes.
 
 Otro ejemplo es como interpretan la cantidad de bytes de la clave AES en
 Java y en PHP. Dadas las restricciones sobre criptografía, AES en Java
-esta limitado (a menos que se descarguen extensiones) a 16 bytes en la clave. 
+esta limitado (a menos que se descarguen extensiones) a 16 bytes en la clave.
 Esto hace que el cifrado pierda mucha fuerza. Descargando las extensiones
 correctas se arreglo este problema.
 
@@ -287,7 +268,7 @@ posibles son):
 	\item Agregar nuevos comandos.
 	\item Permitir sistemas alternativos de envio de mensajes.
 	\item Utilizar un protocolo más fuerte, ya que el actual requiere de una
-	clave hardcodeada que podría ser fácilmente descubrible mediante un 
+	clave hardcodeada que podría ser fácilmente descubrible mediante un
 	desensamblado.
 	\item Enviar las fotografías tomadas al servidor como Base 64.
 	\item Almacenar los datos de una manera mas interesantes (actualmente se
