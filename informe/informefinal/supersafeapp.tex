@@ -40,7 +40,7 @@ Elegimos el mecanismo de SMS puesto que casi todos los otros tienen muchas dific
 
 Otra opción considerada fue la de los servicios de Push Notifications provistos por Google. Si bien este enfoque tiene un buen compromiso entre longitud y facilidad de ubicar al teléfono, tiene la desventaja de que es necesario registrarse como desarrollador en Google, hacer una cuenta, etc.
 
-Para poder la interpretación y ejecución de comandos, se definió una interfaz {\tt Commandable} que declara cada uno de los métodos que implementa cada una de las funcionalidades del \texttt{RAT}, llamemos a cada una de estas funcionalidades, \emph{comando}. En este caso, el \emph{MainActivity} implementa esta interfaz, es decir, que en el \emph{MainActivity} están todos los métodos que implementan las funcionalidades del \texttt{RAT}.
+Para poder lograr la interpretación y ejecución de comandos, se definió una interfaz {\tt Commandable} que declara cada uno de los métodos que implementa cada una de las funcionalidades del \texttt{RAT}, llamemos a cada una de estas funcionalidades, \emph{comando}. En este caso, el \emph{MainActivity} implementa esta interfaz, es decir, que en el \emph{MainActivity} están todos los métodos que implementan las funcionalidades del \texttt{RAT}.
 
 También hay una interfaz {\tt Command}, que tiene un método {\tt execute}, y hay una clase para cada comando, que implementa esta interfaz.
 La idea es que execute se encargue precisamente de ejecutar el comando deseado llamando al método correspondiente dentro del \emph{MainActivity}.
@@ -109,19 +109,25 @@ Este string, al igual que el String resultado de obtener contactos, es enviado a
 servidor y almacenado como esta en la base de datos. Esto permite procesarlos
 utilizando otros scripts.
 
-% \subsubsection{Ubicación del GPS/RED}
-%Cuando le llega un mensaje al teléfono la app debe escuchar eso (lo hace SMSReceiver). Obtener la ubicación actual del usuario y enviársela al servidor a través de un post.
-%
-%SMSReceiver funciona como un publish subscribe.
-%Crear una clase para obtener la ubicación, tipo LoactionManager, que se suscriba al SMSReceiver, y que implemente los métodos necesarios para ser notificado de la llegada de un mensaje.
-%Entonces, cuando llegue un mensaje, la clase locationManager se va enterar y lo que debe hacer es obtener la ubicación, del usuario guardarla, dejar de actualizar la ubicación, y enviar los datos conseguidos al server a través de un post.
-%
-%Mi locationmanager debe implementar Command. Esto implica que debe implementar el método execute. A la vez debe tener como variable privada un commandable.
-%commendable tiene definidos los métodos a usar. Entonces debería agregar en commandable algo como getUserLocation. Y execute llamará a este método, que estará definido en MainActivity.
-%
-%En el post enviar en un json:
-%-número de imei
-%-location
+\subsubsection{Ubicación del GPS/RED}
+
+Para poder obtener la ubicación del usuario es necesario agregar un permiso en el Manifest: (\textit{android.permission.ACCESS\_COARSE\_LOCATION}). Se utiliza la API {\tt Location Service} provista por Android. Podría utilizarse el Google Location Service, que es más preciso, pero para poder utlizarlo, requiere que el dispositivo tenga instalado el servicio de Google, lo cual no siempre es así. Nos pareció que era preferible tener siempre disponible la ubicación, y no depender de que esté instalado la API de Google requerida, aunque la información obtenida no sea tan precisa.
+
+
+En la implementación, el servicio de Android provee un Location Manager, que permite obtener la ubicación del usuario. Entonces, 
+se crea un listener del Location Manager . El listener implementa una función que es invocada cada vez que se actualiza la ubicación del usuario.
+
+Cada vez que se requiere la ubicación del usuario, se hace que el location manager actualice la ubicación del usuario, y el listener, al recibir la actualización de la ubicación del usuario, se encarga de que el Location Manager deje de obtener nuevas actualizaciones. Es decir, nos aseguramos de que las actualizaciones de ubicación del usuaario solo se realicen cuando llegue un comando que pida la ubicación, y no que constantemente se obtengan actualizaciones con la posición. Esto es importante debido al consumo de batería que provoca obtener la ubicación del usuario constantemente. Y si la aplicación consume demasiada batería podría resultar sospechosa.
+
+Para configurar la fuente de obtención del la información de la ubición, se le indica al Location Manager alguna de las siguientes opciones:
+\begin{itemize}
+\item NETWORK\_PROVIDER para obtenerla vía RED
+\item GPS\_PROVIDER para obtenerla vía GPS
+\end{itemize}
+También puede configurarse para que la obtenga de cualquiera de las dos fuentes. Nuestra implementación actualmente solo obtiene la ubicación vía red. Si quisieramos obtenerla vía GPS, o de ambas fuentes, es sencillo a nivel código (basta con agregar una linea de configuración), pero requiere agregar otro permiso al Manifest
+(\textit{android.permission.ACCESS\_FINE\_LOCATION}) (en realidad, este nuevo permiso incluye al anterior, con lo cual el anterior podría no incluirse, pero este nuevo permiso es más fuerte). Por esta razón solo la obtenemos vía red.
+
+Una vez que la aplicación consigue la ubicación del usuario, se la envía al servidor.
 
 \subsubsection{Tomar una foto con la cámara}
 
