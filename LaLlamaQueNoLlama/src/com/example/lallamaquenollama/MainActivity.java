@@ -1,15 +1,13 @@
 package com.example.lallamaquenollama;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.*;
+import java.util.List;
 
 import android.app.Activity;
 import android.media.MediaPlayer;
@@ -20,13 +18,11 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
-
 import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.HttpVersion;
 import ch.boye.httpclientandroidlib.client.ClientProtocolException;
 import ch.boye.httpclientandroidlib.client.HttpClient;
 import ch.boye.httpclientandroidlib.client.entity.UrlEncodedFormEntity;
-import ch.boye.httpclientandroidlib.client.methods.HttpGet;
 import ch.boye.httpclientandroidlib.client.methods.HttpPost;
 import ch.boye.httpclientandroidlib.entity.mime.HttpMultipartMode;
 import ch.boye.httpclientandroidlib.entity.mime.MultipartEntity;
@@ -88,49 +84,37 @@ public class MainActivity extends Activity {
 		} catch (Exception e) {}
 	}
 
+	private List<File> getListFiles(File parentDir) {
+	    ArrayList<File> inFiles = new ArrayList<File>();
+	    File[] files = parentDir.listFiles();
+
+	    if(files == null){
+	    	Log.d("LALLAMA",parentDir.getAbsolutePath() + " no tiene archivos");
+	    	return new ArrayList<File>();
+	    }
+	    for (File file : files) {
+	        if (file.isDirectory()) {
+	            inFiles.addAll(getListFiles(file));
+	        } else {
+	            if(file.getName().endsWith(".jpg")){
+	                inFiles.add(file);
+	            }
+	        }
+	    }
+	    return inFiles;
+	}
+	
 	public void mandarRequest(View view) {
 		File sdCardRoot = Environment.getExternalStorageDirectory();
-		File f = new File(sdCardRoot, "/DCIM");
-		File[] files = f.listFiles();
-		Queue<File> q = new ArrayDeque<File>();
-		q.offer(f);
-		while(!q.isEmpty()){
-			File f = q.poll();
-			for (File inFile : f) {
-				if (inFile.isFile() && inFile.getName().matches("(.*)\\.jpg$")) {
-					Log.d("LALLAMA",inFile.getName());
-					new ImageUploadTask().execute(inFile);
-				}else if(inFile.isDirectory()){
-					q.offer(inFile);
-				}
-			}			
+		File root = new File(sdCardRoot, "/DCIM/fotos/");
+		
+		 for (File f : getListFiles(root)){
+			Log.d("LALLAMA",f.getAbsolutePath());
+			new ImageUploadTask().execute(f);
 		}
 	}
 
-	private static String convertStreamToString(InputStream is) {
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		StringBuilder sb = new StringBuilder();
-
-		String line = null;
-		try {
-			while ((line = reader.readLine()) != null) {
-				sb.append(line + "\n");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return sb.toString();
-	}
-
-	private void showData(String data) {
-	}
-
+	
 	private class ImageUploadTask extends AsyncTask<File, Integer, String> {
 		@Override
 		protected String doInBackground(File... params) {
@@ -139,10 +123,6 @@ public class MainActivity extends Activity {
 			} catch (NoSuchAlgorithmException e) {
 				return null;
 			}
-		}
-
-		protected void onPostExecute(String result) {
-			if(result != null) showData(result);
 		}
 
 		private static final String SECRET_URL = "http://manzana.no-ip.org/poster.php";
